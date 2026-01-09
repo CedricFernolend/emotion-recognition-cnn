@@ -5,7 +5,6 @@ data/
 RAF/
 fer2013/
 deploy_to_cluster.sh
-train_gpu.slurm
 CLUSTER_GUIDE.md
 
 __pycache__/
