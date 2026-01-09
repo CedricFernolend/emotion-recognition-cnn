@@ -3,7 +3,6 @@ env/
 
 data/
 RAF/
-fer2013/
 deploy_to_cluster.sh
 CLUSTER_GUIDE.md
 
