@@ -2,6 +2,10 @@ venv/
 env/
 
 data/
+RAF/
+deploy_to_cluster.sh
+train_gpu.slurm
+CLUSTER_GUIDE.md
 
 results/
 

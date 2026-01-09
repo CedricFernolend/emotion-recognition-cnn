@@ -57,23 +57,34 @@ class EmotionDataset(Dataset):
 
 def get_transforms(augment=True):
     """
-    Get image transformations.
-    augment=True for training data (adds random flips/rotations)
-    augment=False for validation/test data
+    Get image transformations following preliminary report specifications:
+    - Resize to 64x64
+    - Data augmentation (training only):
+      * Random horizontal flips
+      * Random rotations (±15°)
+      * Random translations up to 10% of image dimensions
+    - Normalize RGB to [-1, 1]
+    
+    Args:
+        augment: True for training data, False for validation/test data
     """
     if augment:
         return transforms.Compose([
             transforms.Resize((IMAGE_SIZE, IMAGE_SIZE)),
-            transforms.RandomHorizontalFlip(),
-            transforms.RandomRotation(15),
+            transforms.RandomHorizontalFlip(p=0.5),
+            transforms.RandomRotation(15),  # ±15° as specified in report
+            transforms.RandomAffine(
+                degrees=0,  # Rotation already handled above
+                translate=(0.1, 0.1)  # Up to 10% translation as specified in report
+            ),
             transforms.ToTensor(),
-            transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
+            transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])  # [-1, 1]
         ])
     else:
         return transforms.Compose([
             transforms.Resize((IMAGE_SIZE, IMAGE_SIZE)),
             transforms.ToTensor(),
-            transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
+            transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])  # [-1, 1]
         ])
 
 
