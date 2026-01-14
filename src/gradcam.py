@@ -322,7 +322,7 @@ def compare_gradcam_methods(image_path, model_path=MODEL_SAVE_PATH, save_path=No
 
 if __name__ == "__main__":
     # Example usage
-    image_path = "my_face_2.jpg"  # Change this to your image
+    image_path = "sad_man.jpg"  # Change this to your image
     
     # Standard Grad-CAM
     save_path = f"{RESULTS_PATH}/visualizations/gradcam_example.png"

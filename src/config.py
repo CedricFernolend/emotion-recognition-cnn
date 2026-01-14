@@ -21,3 +21,9 @@ DROPOUT_RATE = 0.5
 
 # Model will be saved here
 MODEL_SAVE_PATH = "results/models/emotion_model.pth"
+
+# Webcam settings
+WEBCAM_CAMERA_ID = 0
+WEBCAM_CONFIDENCE_THRESHOLD = 0.0
+WEBCAM_RESOLUTION = (640, 480)
+WEBCAM_FPS_DISPLAY = True

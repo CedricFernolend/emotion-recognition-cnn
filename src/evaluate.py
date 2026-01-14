@@ -36,7 +36,7 @@ def test_model(model_path=MODEL_SAVE_PATH):
 
     print("Testing...")
     with torch.no_grad():
-        for images, labels in tqdm(val_loader):
+        for images, labels in tqdm(test_loader):
             images = images.to(device)
             outputs = model(images)
             _, predicted = outputs.max(1)
