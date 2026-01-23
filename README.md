@@ -1,81 +1,129 @@
-# Emotion Recognition Project
+# Emotion Recognition CNN
 
-Team: Zeynep Belde, Alena Daneker, Cedric Fernolend
+Facial emotion recognition system classifying 6 emotions: happiness, surprise, sadness, anger, disgust, fear.
 
-CNN that recognizes 6 emotions from facial images: happiness, surprise, sadness, anger, disgust, fear.
+## Quick Start
 
-## Setup
-
-1. Install Python 3.8 or newer
-
-2. Create virtual environment:
 ```bash
+# Create virtual environment
 python -m venv venv
-source venv/bin/activate
+source venv/bin/activate  # Windows: venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Train model
+cd src && python train.py
+
+# Evaluate model
+python evaluate.py
+
+# Real-time webcam recognition
+python webcam.py
 ```
 
-On Windows use: `venv\Scripts\activate`
+## Project Structure
 
-3. Install packages:
-```bash
-pip install -r requirements.txt
+```
+├── src/
+│   ├── config.py       # Configuration settings
+│   ├── model.py        # CNN architecture with spatial attention
+│   ├── data.py         # Dataset and data loading
+│   ├── train.py        # Training pipeline with early stopping
+│   ├── evaluate.py     # Model evaluation and metrics
+│   ├── gradcam.py      # Grad-CAM visualization
+│   ├── webcam.py       # Real-time webcam recognition
+│   └── camera_test.py  # Camera diagnostic utility
+├── tests/              # Test suite
+├── data/raw/           # Training data (train/val/test splits)
+├── results/
+│   ├── models/         # Saved model weights
+│   └── visualizations/ # Generated visualizations
+└── requirements.txt
 ```
 
 ## Data Setup
 
-Put your images in folders like this:
+Organize images in folder structure:
 ```
-data/raw/train/happiness/img1.jpg
-data/raw/train/anger/img2.jpg
-data/raw/val/sadness/img3.jpg
-data/raw/test/fear/img4.jpg
+data/raw/
+├── train/
+│   ├── happiness/
+│   ├── surprise/
+│   ├── sadness/
+│   ├── anger/
+│   ├── disgust/
+│   └── fear/
+├── val/
+│   └── (same structure)
+└── test/
+    └── (same structure)
 ```
 
-You need three folders: `train`, `val`, and `test`. Inside each, create 6 folders with these exact names:
-- happiness
-- surprise
-- sadness
-- anger
-- disgust
-- fear
+## Usage
 
-## How to Use
-
-### Train the model:
+### Training
 ```bash
 cd src
 python train.py
 ```
+Features: early stopping, learning rate scheduling, model checkpointing.
 
-### Test the model:
+### Evaluation
 ```bash
-cd src
 python evaluate.py
 ```
+Generates accuracy metrics, classification report, and confusion matrix.
 
-### See what the model looks at (Grad-CAM):
+### Webcam Recognition
 ```bash
-cd src
+python webcam.py [--model PATH] [--camera ID] [--threshold 0-100] [--no-fps]
+```
+Controls: `q` to quit, `s` to save frame.
+
+### Grad-CAM Visualization
+```bash
 python gradcam.py
 ```
+Edit `image_path` in script to visualize model attention on specific images.
 
-Edit the image path in gradcam.py first.
+### Camera Test
+```bash
+python camera_test.py [--camera ID]
+```
+Run before webcam recognition to verify camera access.
 
-## Files
+## Configuration
 
-- `src/config.py` - Change settings here (batch size, learning rate, etc)
-- `src/data.py` - Loads images from folders
-- `src/model.py` - The CNN architecture
-- `src/train.py` - Training script
-- `src/evaluate.py` - Testing and results
-- `src/gradcam.py` - Visualizations
+Edit `src/config.py` to modify:
 
-## Where to Add Your Code
+| Setting | Default | Description |
+|---------|---------|-------------|
+| IMAGE_SIZE | 64 | Input image dimensions |
+| BATCH_SIZE | 32 | Training batch size |
+| LEARNING_RATE | 0.0003 | Initial learning rate |
+| NUM_EPOCHS | 30 | Maximum training epochs |
+| DROPOUT_RATE | 0.5 | Dropout probability |
 
-- To change model architecture: edit `src/model.py`
-- To change training settings: edit `src/config.py`
-- To add data preprocessing: edit `src/data.py`
-- To change training loop: edit `src/train.py`
+## Model Architecture
 
-All trained models save to `results/models/`
-All visualizations save to `results/visualizations/`
+4-block CNN with:
+- Progressive filter expansion: 64 → 128 → 256 → 512
+- Spatial attention modules
+- Skip connections
+- Batch normalization
+- Dropout regularization
+
+## Testing
+
+```bash
+# Run all tests
+pytest tests/ -v
+
+# Run with coverage
+pytest tests/ --cov=src --cov-report=term-missing
+```
+
+## Authors
+
+Zeynep Belde, Alena Daneker, Cedric Fernolend
