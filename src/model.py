@@ -10,7 +10,7 @@ class SEBlock(nn.Module):
         self.avg_pool = nn.AdaptiveAvgPool2d(1)
         self.fc = nn.Sequential(
             nn.Linear(channels, channels // reduction, bias=False),
-            nn.ReLU(inplace=True),
+            nn.ReLU(inplace=False),
             nn.Linear(channels // reduction, channels, bias=False),
             nn.Sigmoid()
         )
@@ -44,7 +44,7 @@ class ImprovedBlock(nn.Module):
             convs.append(nn.Conv2d(in_channels if i==0 else out_channels, out_channels, kernel_size=3, padding=1))
             convs.append(nn.BatchNorm2d(out_channels))
             if i < num_convs - 1:
-                convs.append(nn.ReLU(inplace=True))
+                convs.append(nn.ReLU(inplace=False))
         
         self.body = nn.Sequential(*convs)
         self.skip = skip if skip else nn.Identity()
@@ -77,7 +77,7 @@ class EmotionCNN(nn.Module):
             nn.Flatten(),
             nn.Dropout(DROPOUT_RATE),
             nn.Linear(512, 128),
-            nn.ReLU(inplace=True),
+            nn.ReLU(inplace=False),
             nn.BatchNorm1d(128),
             nn.Dropout(DROPOUT_RATE * 0.6), # Slightly lower dropout on second layer
             nn.Linear(128, num_classes)

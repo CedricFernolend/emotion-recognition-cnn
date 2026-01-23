@@ -1,7 +1,7 @@
 venv/
 env/
 
-data/
+
 RAF/
 deploy_to_cluster.sh
 CLUSTER_GUIDE.md
