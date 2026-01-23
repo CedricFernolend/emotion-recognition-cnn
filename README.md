@@ -127,3 +127,7 @@ pytest tests/ --cov=src --cov-report=term-missing
 ## Authors
 
 Zeynep Belde, Alena Daneker, Cedric Fernolend
+
+#potential dataset https://www.epfl.ch/labs/mmspg/downloads/emotion-image-datasets/
+    https://data.mendeley.com/datasets/wmfd4p3z32/1
+陈, 丹 (2025), “Facial Expression Recognition”, Mendeley Data, V1, doi: 10.17632/vpnvppky5f.1

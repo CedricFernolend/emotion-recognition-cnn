@@ -10,17 +10,20 @@ from data import get_transforms
 
 
 class BaseGradCAM:
-    """Base class for Grad-CAM implementations."""
-
     def __init__(self, model, target_layer=None):
         self.model = model
         self.model.eval()
         self.gradients = None
         self.activations = None
-        self.target_layer = target_layer or model.conv4_2
+        
+        # FIX: Point to the last conv layer in the new architecture
+        # layer4 is the last block, body is the Sequential, -2 is the last BatchNorm, -3 is the last Conv
+        if target_layer is None:
+            self.target_layer = model.layer4.body[-3] 
+        else:
+            self.target_layer = target_layer
+            
         self._register_hooks()
-
-    def _register_hooks(self):
         def backward_hook(module, grad_input, grad_output):
             self.gradients = grad_output[0]
 
@@ -194,7 +197,7 @@ def compare_gradcam_methods(image_path, model_path=MODEL_SAVE_PATH, save_path=No
 
 
 if __name__ == "__main__":
-    image_path = "sad_man.jpg"
+    image_path = "my_face_2.jpg"
 
     save_path = f"{RESULTS_PATH}/visualizations/gradcam_example.png"
     visualize_gradcam(image_path, save_path=save_path)

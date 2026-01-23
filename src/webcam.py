@@ -1,4 +1,4 @@
-"""Real-time emotion recognition from webcam."""
+"""Real-time emotion recognition from webcam with Grad-CAM visualization."""
 
 import os
 import time
@@ -12,10 +12,11 @@ from PIL import Image
 from config import EMOTION_LABELS, MODEL_SAVE_PATH, RESULTS_PATH
 from model import load_model
 from data import get_transforms
+from gradcam import GradCAM
 
 
 class EmotionWebcam:
-    """Real-time emotion recognition from webcam."""
+    """Real-time emotion recognition from webcam with Grad-CAM support."""
 
     EMOTION_COLORS = {
         'happiness': (0, 255, 0),
@@ -32,18 +33,22 @@ class EmotionWebcam:
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         print(f"Using device: {self.device}")
 
+        # Load Model
         print(f"Loading model from {model_path}")
         self.model = load_model(model_path).to(self.device)
         self.model.eval()
-        print("Model loaded successfully")
+        
+        # Initialize Grad-CAM
+        self.gradcam = GradCAM(self.model)
+        self.show_gradcam = False 
 
         self.transform = get_transforms(augment=False)
 
+        # Face Detector
         cascade_path = cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
         self.face_cascade = cv2.CascadeClassifier(cascade_path)
         if self.face_cascade.empty():
             raise RuntimeError("Failed to load Haar Cascade classifier")
-        print("Face detector initialized")
 
         self.cap = cv2.VideoCapture(camera_id)
         if not self.cap.isOpened():
@@ -52,19 +57,6 @@ class EmotionWebcam:
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 
-        print("Warming up camera...")
-        for _ in range(5):
-            ret, _ = self.cap.read()
-            if ret:
-                break
-            time.sleep(0.1)
-
-        if not ret:
-            self.cap.release()
-            raise RuntimeError("Webcam opened but cannot read frames")
-
-        print("Webcam initialized")
-
     def preprocess_face(self, face_bgr):
         """Convert BGR face crop to model input tensor."""
         face_rgb = cv2.cvtColor(face_bgr, cv2.COLOR_BGR2RGB)
@@ -72,143 +64,121 @@ class EmotionWebcam:
         face_tensor = self.transform(face_pil).unsqueeze(0)
         return face_tensor.to(self.device)
 
-    def predict_emotion(self, face_tensor):
-        """Run inference on preprocessed face."""
-        with torch.no_grad():
-            outputs = self.model(face_tensor)
-            probabilities = torch.softmax(outputs, dim=1)
-            confidence, predicted_idx = torch.max(probabilities, dim=1)
-            emotion_label = EMOTION_LABELS[predicted_idx.item()]
-            confidence_pct = confidence.item() * 100
-        return emotion_label, confidence_pct, probabilities.cpu().numpy()[0]
-
-    def draw_prediction(self, frame, x, y, w, h, emotion, confidence):
-        """Draw bounding box and emotion label on frame."""
-        color = self.EMOTION_COLORS.get(emotion, (255, 255, 255))
-        cv2.rectangle(frame, (x, y), (x + w, y + h), color, 2)
-
-        label = f"{emotion}: {confidence:.1f}%"
-        (text_width, text_height), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.6, 2)
-
-        cv2.rectangle(frame, (x, y - text_height - 10), (x + text_width, y), color, -1)
-        cv2.putText(frame, label, (x, y - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+    def get_gradcam_overlay(self, face_bgr, face_tensor):
+        """Generates the Grad-CAM heatmap overlaid on the face BGR image."""
+        heatmap, pred_idx = self.gradcam.generate(face_tensor)
+        
+        # Resize heatmap to match face crop
+        heatmap_resized = cv2.resize(heatmap, (face_bgr.shape[1], face_bgr.shape[0]))
+        heatmap_color = cv2.applyColorMap(np.uint8(255 * heatmap_resized), cv2.COLORMAP_JET)
+        
+        # Overlay heatmap on the BGR face
+        overlay = cv2.addWeighted(face_bgr, 0.6, heatmap_color, 0.4, 0)
+        return overlay, EMOTION_LABELS[pred_idx]
 
     def draw_emotion_probabilities(self, frame, probabilities):
         """Draw all emotion probabilities in the bottom left corner."""
-        x_start = 10
-        y_start = frame.shape[0] - 150
-
+        x_start, y_start = 10, frame.shape[0] - 150
         overlay = frame.copy()
         cv2.rectangle(overlay, (x_start - 5, y_start - 25), (x_start + 200, y_start + 125), (0, 0, 0), -1)
         cv2.addWeighted(overlay, 0.6, frame, 0.4, 0, frame)
 
-        cv2.putText(frame, "Emotion Probabilities:", (x_start, y_start - 5),
+        cv2.putText(frame, "Probabilities:", (x_start, y_start - 5),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
 
         for i, (emotion, prob) in enumerate(zip(EMOTION_LABELS, probabilities)):
             y_pos = y_start + 20 + i * 20
-            text = f"{emotion:12s}: {prob*100:5.1f}%"
             color = self.EMOTION_COLORS.get(emotion, (255, 255, 255))
-            cv2.putText(frame, text, (x_start, y_pos), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 1)
-
-    def detect_faces(self, frame_gray):
-        """Detect faces in grayscale frame using Haar Cascades."""
-        return self.face_cascade.detectMultiScale(
-            frame_gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30),
-            flags=cv2.CASCADE_SCALE_IMAGE
-        )
+            cv2.putText(frame, f"{emotion:10s}: {prob*100:5.1f}%", (x_start, y_pos), 
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 1)
 
     def run(self, show_fps=True, confidence_threshold=0.0):
-        """Main webcam loop for real-time emotion recognition."""
-        print("\nStarting webcam emotion recognition...")
-        print("Controls: 'q' to quit, 's' to save frame\n")
+        print("\nStarting webcam...")
+        print("Controls: 'q': Quit | 's': Save | 'g': Toggle Grad-CAM Mode\n")
 
         frame_count = 0
         fps = 0
         prev_time = time.time()
-        consecutive_failures = 0
         latest_probabilities = None
 
         try:
             while True:
                 ret, frame = self.cap.read()
-                if not ret:
-                    consecutive_failures += 1
-                    if consecutive_failures >= 10:
-                        print("Failed to grab frames. Exiting.")
-                        break
-                    time.sleep(0.1)
-                    continue
+                if not ret: break
 
-                consecutive_failures = 0
                 gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-                faces = self.detect_faces(gray)
+                faces = self.face_cascade.detectMultiScale(gray, 1.1, 5, minSize=(30, 30))
+                
+                display_frame = frame.copy()
 
-                for (x, y, w, h) in faces:
-                    padding = int(0.1 * max(w, h))
-                    x1 = max(0, x - padding)
-                    y1 = max(0, y - padding)
-                    x2 = min(frame.shape[1], x + w + padding)
-                    y2 = min(frame.shape[0], y + h + padding)
-
+                if self.show_gradcam and len(faces) > 0:
+                    # MODE: GRAD-CAM (Zoomed)
+                    (x, y, w, h) = max(faces, key=lambda f: f[2] * f[3])
+                    pad = int(w * 0.15) # Slightly more padding for better context
+                    x1, y1 = max(0, x-pad), max(0, y-pad)
+                    x2, y2 = min(frame.shape[1], x+w+pad), min(frame.shape[0], y+h+pad)
+                    
                     face_crop = frame[y1:y2, x1:x2]
-                    if face_crop.shape[0] < 30 or face_crop.shape[1] < 30:
-                        continue
-
-                    try:
+                    if face_crop.size > 0:
                         face_tensor = self.preprocess_face(face_crop)
-                        emotion, confidence, probabilities = self.predict_emotion(face_tensor)
-                        latest_probabilities = probabilities
+                        grad_overlay, label = self.get_gradcam_overlay(face_crop, face_tensor)
+                        
+                        # Resize to fill window
+                        display_frame = cv2.resize(grad_overlay, (frame.shape[1], frame.shape[0]), interpolation=cv2.INTER_CUBIC)
+                        cv2.putText(display_frame, f"Grad-CAM: {label}", (20, 40), 
+                                    cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+                else:
+                    # MODE: STANDARD
+                    for (x, y, w, h) in faces:
+                        face_crop = frame[y:y+h, x:x+w]
+                        try:
+                            face_tensor = self.preprocess_face(face_crop)
+                            with torch.no_grad():
+                                outputs = self.model(face_tensor)
+                                probs = torch.softmax(outputs, dim=1)
+                                conf, idx = torch.max(probs, 1)
+                                latest_probabilities = probs.cpu().numpy()[0]
+                                
+                            if conf.item() * 100 >= confidence_threshold:
+                                emotion = EMOTION_LABELS[idx.item()]
+                                color = self.EMOTION_COLORS.get(emotion, (255, 255, 255))
+                                cv2.rectangle(display_frame, (x, y), (x+w, y+h), color, 2)
+                                cv2.putText(display_frame, f"{emotion} {conf.item()*100:.1f}%", (x, y-10), 
+                                            cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
+                        except: continue
 
-                        if confidence >= confidence_threshold:
-                            self.draw_prediction(frame, x, y, w, h, emotion, confidence)
-                    except Exception as e:
-                        print(f"Error processing face: {e}")
+                    if latest_probabilities is not None:
+                        self.draw_emotion_probabilities(display_frame, latest_probabilities)
 
-                if latest_probabilities is not None:
-                    self.draw_emotion_probabilities(frame, latest_probabilities)
-
+                # UI Overlays
                 if show_fps:
                     frame_count += 1
-                    curr_time = time.time()
-                    if curr_time - prev_time >= 1.0:
-                        fps = frame_count / (curr_time - prev_time)
-                        frame_count = 0
-                        prev_time = curr_time
+                    if time.time() - prev_time >= 1.0:
+                        fps = frame_count / (time.time() - prev_time)
+                        frame_count, prev_time = 0, time.time()
+                    cv2.putText(display_frame, f"FPS: {fps:.1f}", (frame.shape[1]-120, 30), 
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
 
-                    cv2.putText(frame, f"FPS: {fps:.1f}", (10, 30),
-                                cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+                status_text = "MODE: Grad-CAM (Zoom)" if self.show_gradcam else "MODE: Standard ('g' to toggle)"
+                cv2.putText(display_frame, status_text, (10, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 255), 1)
 
-                cv2.imshow('Emotion Recognition', frame)
+                cv2.imshow('Emotion Recognition', display_frame)
 
                 key = cv2.waitKey(1) & 0xFF
-                if key == ord('q'):
-                    print("\nQuitting...")
-                    break
+                if key == ord('q'): break
+                elif key == ord('g'): self.show_gradcam = not self.show_gradcam
                 elif key == ord('s'):
                     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-                    save_dir = os.path.join(RESULTS_PATH, "visualizations")
-                    os.makedirs(save_dir, exist_ok=True)
-                    filename = os.path.join(save_dir, f"webcam_{timestamp}.png")
-                    cv2.imwrite(filename, frame)
-                    print(f"Saved frame to {filename}")
+                    fn = os.path.join(RESULTS_PATH, f"webcam_{timestamp}.png")
+                    cv2.imwrite(fn, display_frame)
+                    print(f"Saved: {fn}")
 
-        except KeyboardInterrupt:
-            print("\nInterrupted by user")
         finally:
-            self.cleanup()
-
-    def cleanup(self):
-        """Release resources and close windows."""
-        print("Releasing resources...")
-        if hasattr(self, 'cap') and self.cap is not None:
             self.cap.release()
-        cv2.destroyAllWindows()
-        print("Cleanup complete")
+            cv2.destroyAllWindows()
 
 
 def main():
-    """Command-line interface for webcam emotion recognition."""
     parser = argparse.ArgumentParser(description='Real-time emotion recognition from webcam')
     parser.add_argument('--model', type=str, default=MODEL_SAVE_PATH, help='Path to trained model')
     parser.add_argument('--camera', type=int, default=0, help='Camera device ID')
@@ -217,22 +187,14 @@ def main():
 
     args = parser.parse_args()
 
-    if not 0 <= args.threshold <= 100:
-        parser.error("Threshold must be between 0 and 100")
-
     try:
         webcam = EmotionWebcam(model_path=args.model, camera_id=args.camera)
         webcam.run(show_fps=not args.no_fps, confidence_threshold=args.threshold)
-    except FileNotFoundError as e:
-        print(f"\nError: Model file not found - {e}")
-        print("Please train a model first by running: python train.py")
+    except Exception as e:
+        print(f"Error: {e}")
         return 1
-    except RuntimeError as e:
-        print(f"\nError: {e}")
-        return 1
-
     return 0
 
 
 if __name__ == "__main__":
-    exit(main())
+    main()
