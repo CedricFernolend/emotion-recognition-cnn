@@ -11,7 +11,7 @@ EMOTION_LABELS = ['happiness', 'surprise', 'sadness', 'anger', 'disgust', 'fear'
 
 BATCH_SIZE = 32
 LEARNING_RATE = 0.0003
-NUM_EPOCHS = 60
+NUM_EPOCHS = 150
 DROPOUT_RATE = 0.5
 USE_CLASS_WEIGHTS = True  # Weight loss by inverse class frequency
 
