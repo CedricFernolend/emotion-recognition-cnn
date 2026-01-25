@@ -90,7 +90,7 @@ def get_transforms(augment=True):
         ])
 
 
-def get_dataloaders(val_split=0.1, seed=42, stratified=True):
+def get_dataloaders(val_split=0.2, seed=42, stratified=True):
     """
     Create dataloaders for train, validation, and test sets.
 
