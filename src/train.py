@@ -82,14 +82,15 @@ def train_model():
     print(f"Trainable parameters: {trainable_params:,}")
 
     # Loss function - optionally weighted by class frequency
+    # Label smoothing (0.1) reduces overconfident predictions and improves generalization
     if USE_CLASS_WEIGHTS:
         print("\nComputing class weights...")
         class_weights = compute_class_weights().to(device)
-        criterion = nn.CrossEntropyLoss(weight=class_weights)
-        print("Using weighted CrossEntropyLoss")
+        criterion = nn.CrossEntropyLoss(weight=class_weights, label_smoothing=0.1)
+        print("Using weighted CrossEntropyLoss with label smoothing (0.1)")
     else:
-        criterion = nn.CrossEntropyLoss()
-        print("Using standard CrossEntropyLoss")
+        criterion = nn.CrossEntropyLoss(label_smoothing=0.1)
+        print("Using CrossEntropyLoss with label smoothing (0.1)")
 
     optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE, weight_decay=1e-4)
     scheduler = ReduceLROnPlateau(optimizer, mode='max', factor=0.5, patience=5, min_lr=1e-6)

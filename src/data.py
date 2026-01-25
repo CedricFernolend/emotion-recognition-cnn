@@ -76,8 +76,11 @@ def get_transforms(augment=True):
             transforms.RandomHorizontalFlip(p=0.5),
             transforms.RandomRotation(15),
             transforms.RandomAffine(degrees=0, translate=(0.1, 0.1)),
+            transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.1),
+            transforms.RandomApply([transforms.GaussianBlur(kernel_size=3)], p=0.1),
             transforms.ToTensor(),
-            transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
+            transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
+            transforms.RandomErasing(p=0.1, scale=(0.02, 0.1)),
         ])
     else:
         return transforms.Compose([
