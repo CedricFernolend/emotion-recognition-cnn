@@ -1,7 +1,7 @@
 import os
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DATA_PATH = os.path.join(PROJECT_ROOT, "data/processed_hd/")
+DATA_PATH = os.path.join(PROJECT_ROOT, "RAF-DB/")
 PROCESSED_PATH = os.path.join(PROJECT_ROOT, "data/processed/")
 RESULTS_PATH = os.path.join(PROJECT_ROOT, "results/")
 
