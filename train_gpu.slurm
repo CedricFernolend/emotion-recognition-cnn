@@ -6,11 +6,18 @@
 #SBATCH --partition=NvidiaAll           # GPU partition (adjust based on your cluster)
 #SBATCH --ntasks=1                      # Run on a single node
 
+# Model version to train (default: v4 if not specified)
+# Usage: MODEL_VERSION=v1 sbatch train_gpu.slurm
+MODEL_VERSION=${MODEL_VERSION:-v4}
+
 # Print job info
+echo "=========================================="
 echo "Job started at: $(date)"
 echo "Running on node: $(hostname)"
 echo "Job ID: $SLURM_JOB_ID"
 echo "GPU allocated: $CUDA_VISIBLE_DEVICES"
+echo "Model version: $MODEL_VERSION"
+echo "=========================================="
 
 # Load necessary modules (adjust these based on your cluster)
 # Common examples - check with: module avail
@@ -44,10 +51,24 @@ pip install -r requirements.txt
 # Verify GPU is available
 python -c "import torch; print(f'PyTorch version: {torch.__version__}'); print(f'CUDA available: {torch.cuda.is_available()}'); print(f'CUDA version: {torch.version.cuda}'); print(f'GPU count: {torch.cuda.device_count()}')"
 
-# Run training
-echo "Starting training..."
+# Run training with specified version
+echo ""
+echo "=========================================="
+echo "Starting training for model version: $MODEL_VERSION"
+echo "=========================================="
 cd src
-python train.py
+python train.py --version $MODEL_VERSION
+
+# Run evaluation
+echo ""
+echo "=========================================="
+echo "Running evaluation for model version: $MODEL_VERSION"
+echo "=========================================="
+python evaluate.py --version $MODEL_VERSION
 
 # Training complete
+echo ""
+echo "=========================================="
 echo "Job finished at: $(date)"
+echo "Model version: $MODEL_VERSION"
+echo "=========================================="

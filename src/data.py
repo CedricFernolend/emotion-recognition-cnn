@@ -68,39 +68,105 @@ class EmotionDataset(Dataset):
         return Counter(self.labels)
 
 
-def get_transforms(augment=True):
-    """Get image transformations. Use augment=True for training, False for val/test."""
-    if augment:
-        return transforms.Compose([
-            transforms.Resize((IMAGE_SIZE, IMAGE_SIZE)),
-            transforms.RandomHorizontalFlip(p=0.5),
-            transforms.RandomRotation(15),
-            transforms.RandomAffine(degrees=0, translate=(0.1, 0.1)),
-            transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.1),
-            transforms.RandomApply([transforms.GaussianBlur(kernel_size=3)], p=0.1),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
-            transforms.RandomErasing(p=0.1, scale=(0.02, 0.1)),
-        ])
-    else:
+def get_transforms(augment=True, augment_config=None):
+    """
+    Get image transformations.
+
+    Args:
+        augment: If True, apply augmentation (for training)
+        augment_config: Optional dict with augmentation settings.
+                       If None, uses full augmentation pipeline.
+
+    Returns:
+        transforms.Compose object
+    """
+    if not augment:
+        # Validation/test transforms - no augmentation
         return transforms.Compose([
             transforms.Resize((IMAGE_SIZE, IMAGE_SIZE)),
             transforms.ToTensor(),
             transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
         ])
 
+    # Training transforms - build based on config
+    transform_list = [transforms.Resize((IMAGE_SIZE, IMAGE_SIZE))]
 
-def get_dataloaders(val_split=0.2, seed=42, stratified=True):
+    if augment_config is None:
+        # Default: full augmentation (v4 style)
+        augment_config = {
+            'horizontal_flip': True,
+            'rotation': 15,
+            'translate': 0.1,
+            'color_jitter': True,
+            'color_jitter_brightness': 0.2,
+            'color_jitter_contrast': 0.2,
+            'color_jitter_saturation': 0.1,
+            'gaussian_blur': True,
+            'gaussian_blur_prob': 0.1,
+            'random_erasing': True,
+            'random_erasing_prob': 0.1,
+        }
+
+    # Horizontal flip
+    if augment_config.get('horizontal_flip', False):
+        transform_list.append(transforms.RandomHorizontalFlip(p=0.5))
+
+    # Rotation
+    rotation = augment_config.get('rotation', 0)
+    if rotation > 0:
+        transform_list.append(transforms.RandomRotation(rotation))
+
+    # Translation (affine)
+    translate = augment_config.get('translate', 0)
+    if translate > 0:
+        transform_list.append(transforms.RandomAffine(degrees=0, translate=(translate, translate)))
+
+    # Color jitter
+    if augment_config.get('color_jitter', False):
+        brightness = augment_config.get('color_jitter_brightness', 0.2)
+        contrast = augment_config.get('color_jitter_contrast', 0.2)
+        saturation = augment_config.get('color_jitter_saturation', 0.1)
+        transform_list.append(transforms.ColorJitter(
+            brightness=brightness, contrast=contrast, saturation=saturation
+        ))
+
+    # Gaussian blur
+    if augment_config.get('gaussian_blur', False):
+        prob = augment_config.get('gaussian_blur_prob', 0.1)
+        transform_list.append(transforms.RandomApply(
+            [transforms.GaussianBlur(kernel_size=3)], p=prob
+        ))
+
+    # To tensor and normalize
+    transform_list.append(transforms.ToTensor())
+    transform_list.append(transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]))
+
+    # Random erasing (must be after ToTensor)
+    if augment_config.get('random_erasing', False):
+        prob = augment_config.get('random_erasing_prob', 0.1)
+        transform_list.append(transforms.RandomErasing(p=prob, scale=(0.02, 0.1)))
+
+    return transforms.Compose(transform_list)
+
+
+def get_dataloaders(val_split=0.2, seed=42, stratified=True, augment_config=None,
+                    data_path=None, batch_size=None):
     """
     Create dataloaders for train, validation, and test sets.
 
     Args:
-        val_split: Fraction of training data to use for validation (default: 0.1)
+        val_split: Fraction of training data to use for validation (default: 0.2)
         seed: Random seed for reproducible splits (default: 42)
         stratified: If True, maintain class proportions in train/val split (default: True)
+        augment_config: Optional dict with augmentation settings for training
+        data_path: Optional override for data path
+        batch_size: Optional override for batch size
     """
-    full_train_dataset = EmotionDataset(DATA_PATH, 'train', transform=None)
-    test_dataset = EmotionDataset(DATA_PATH, 'test', transform=get_transforms(augment=False))
+    data_path = data_path or DATA_PATH
+    batch_size = batch_size or BATCH_SIZE
+
+    full_train_dataset = EmotionDataset(data_path, 'train', transform=None)
+    test_dataset = EmotionDataset(data_path, 'test', transform=get_transforms(augment=False))
 
     random.seed(seed)
 
@@ -135,15 +201,15 @@ def get_dataloaders(val_split=0.2, seed=42, stratified=True):
         val_indices = indices[:n_val]
 
     # Create subset datasets with appropriate transforms
-    train_transform = get_transforms(augment=True)
+    train_transform = get_transforms(augment=True, augment_config=augment_config)
     val_transform = get_transforms(augment=False)
 
     train_dataset = TransformSubset(full_train_dataset, train_indices, train_transform)
     val_dataset = TransformSubset(full_train_dataset, val_indices, val_transform)
 
-    train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=2)
-    val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=2)
-    test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=2)
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=2)
+    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=2)
+    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=2)
 
     print(f"Dataset splits: train={len(train_dataset)}, val={len(val_dataset)}, test={len(test_dataset)}")
 
