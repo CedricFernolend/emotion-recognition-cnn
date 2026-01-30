@@ -28,11 +28,10 @@ echo "GPU allocated: $CUDA_VISIBLE_DEVICES"
 echo "Model versions to train: $MODEL_VERSIONS"
 echo "=========================================="
 
-# Load necessary modules (adjust these based on your cluster)
-# Common examples - check with: module avail
-module load python/3.10        # or python/3.11, python3, etc.
-module load cuda/11.8          # or cuda/12.1, etc.
-# module load cudnn/8.6        # if needed
+# Load necessary modules (if available on your cluster)
+# Uncomment these if your cluster uses the module system:
+# module load python/3.10
+# module load cuda/11.8
 
 # Navigate to project directory
 cd $SLURM_SUBMIT_DIR
@@ -42,20 +41,33 @@ echo "Working directory: $(pwd)"
 mkdir -p logs
 
 # Set up Python virtual environment
-if [ ! -d "venv_cluster" ]; then
+VENV_DIR="venv_cluster"
+if [ ! -d "$VENV_DIR" ]; then
     echo "Creating virtual environment..."
-    python -m venv venv_cluster
+    python3 -m venv "$VENV_DIR"
+    if [ $? -ne 0 ]; then
+        echo "ERROR: Failed to create virtual environment"
+        exit 1
+    fi
 fi
 
 # Activate virtual environment
-source venv_cluster/bin/activate
+if [ -f "$VENV_DIR/bin/activate" ]; then
+    source "$VENV_DIR/bin/activate"
+    echo "Virtual environment activated: $(which python)"
+else
+    echo "ERROR: Virtual environment not found at $VENV_DIR/bin/activate"
+    exit 1
+fi
 
-# Upgrade pip
-pip install --upgrade pip
-
-# Install requirements
+# Upgrade pip and install requirements
 echo "Installing requirements..."
+pip install --upgrade pip
 pip install -r requirements.txt
+if [ $? -ne 0 ]; then
+    echo "ERROR: Failed to install requirements"
+    exit 1
+fi
 
 # Verify GPU is available
 echo ""
