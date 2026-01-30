@@ -22,10 +22,10 @@ FILTER_PROGRESSION = [64, 128, 256]  # 3 blocks
 CLASSIFIER_HIDDEN = 128
 
 # Training hyperparameters
-LEARNING_RATE = 0.001  # Higher than v4
+LEARNING_RATE = 0.0003  # Per preliminary report (3×10⁻⁴)
 NUM_EPOCHS = 60
 DROPOUT_RATE = 0.5
-USE_CLASS_WEIGHTS = False  # No class weighting
+USE_CLASS_WEIGHTS = True  # Enable to handle class imbalance
 LABEL_SMOOTHING = 0.0  # No label smoothing
 WEIGHT_DECAY = 0.0  # No weight decay
 USE_LR_SCHEDULER = False  # No LR scheduling

@@ -1,6 +1,6 @@
 venv/
 env/
-
+venv_cluster/
 
 RAF/
 deploy_to_cluster.sh
@@ -22,3 +22,8 @@ Thumbs.db
 
 .ipynb_checkpoints/
 
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+*_docker.sh

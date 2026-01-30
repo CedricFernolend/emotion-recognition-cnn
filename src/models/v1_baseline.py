@@ -38,9 +38,12 @@ class SimpleBlock(nn.Module):
 
         self.body = nn.Sequential(*layers)
 
-        # Skip connection: 1x1 conv if channels don't match
+        # Skip connection: 1x1 conv + BatchNorm if channels don't match (ResNet style)
         if in_channels != out_channels:
-            self.skip = nn.Conv2d(in_channels, out_channels, kernel_size=1)
+            self.skip = nn.Sequential(
+                nn.Conv2d(in_channels, out_channels, kernel_size=1, bias=False),
+                nn.BatchNorm2d(out_channels)
+            )
         else:
             self.skip = nn.Identity()
 
@@ -59,7 +62,7 @@ class EmotionCNN_V1(nn.Module):
     3-block architecture without attention mechanisms.
     """
 
-    def __init__(self, num_classes=6):
+    def __init__(self, num_classes=6, dropout_rate=0.5):
         super().__init__()
 
         # Input: 3 x 64 x 64
@@ -75,7 +78,7 @@ class EmotionCNN_V1(nn.Module):
             nn.Flatten(),
             nn.Linear(256, 128),
             nn.ReLU(inplace=False),
-            nn.Dropout(0.5),
+            nn.Dropout(dropout_rate),
             nn.Linear(128, num_classes)
         )
 

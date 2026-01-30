@@ -2,30 +2,29 @@
 import torch
 
 
-def create_model(version: str):
+def create_model(version: str, dropout_rate: float = 0.5):
     """
     Factory function to create model by version.
 
     Args:
         version: Model version ('v1', 'v2', 'v3', 'v4')
+        dropout_rate: Dropout rate for the model (default: 0.5)
 
     Returns:
         Model instance (not loaded with weights)
     """
     if version == 'v1':
         from models.v1_baseline import EmotionCNN_V1
-        return EmotionCNN_V1()
+        return EmotionCNN_V1(num_classes=6, dropout_rate=dropout_rate)
     elif version == 'v2':
-        # TODO: Create v2 model after v1 analysis
         from models.v2_model import EmotionCNN_V2
-        return EmotionCNN_V2()
+        return EmotionCNN_V2(num_classes=6, dropout_rate=dropout_rate)
     elif version == 'v3':
-        # TODO: Create v3 model after v2 analysis
         from models.v3_model import EmotionCNN_V3
-        return EmotionCNN_V3()
+        return EmotionCNN_V3(num_classes=6, dropout_rate=dropout_rate)
     elif version == 'v4':
         from models.v4_final import EmotionCNN
-        return EmotionCNN()
+        return EmotionCNN(num_classes=6, dropout_rate=dropout_rate)
     else:
         raise ValueError(f"Unknown model version: {version}")
 
@@ -66,13 +65,16 @@ def get_gradcam_target_layer(model, version: str):
     """
     if version == 'v1':
         # Last conv in block3 for 3-block model
-        return model.block3[-3]  # Conv2d before final BN
-    elif version in ['v2', 'v3']:
+        return model.block3.body[-2]  # Conv2d before final BN
+    elif version == 'v2':
+        # V2 has 4 blocks with SE attention - target last conv in block4
+        return model.block4.body[-2]  # Conv2d before final BN in block4
+    elif version == 'v3':
         # Depends on architecture - update when defined
-        if hasattr(model, 'layer4'):
-            return model.layer4.body[-3]
+        if hasattr(model, 'block4'):
+            return model.block4.body[-2]
         else:
-            return model.block3[-3]
+            return model.block3.body[-2]
     else:  # v4
         # Last conv in layer4 for 4-block model
         return model.layer4.body[-3]

@@ -8,7 +8,17 @@ import os
 
 # Import shared constants from base config
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DATA_PATH = os.path.join(PROJECT_ROOT, "RAF-DB/")
+
+# Data path: check environment variable first, then Docker path, then local paths
+if os.environ.get('DATA_PATH'):
+    DATA_PATH = os.environ['DATA_PATH']
+elif os.path.exists('/app/data/raw'):
+    DATA_PATH = '/app/data/raw'
+elif os.path.exists(os.path.join(PROJECT_ROOT, "data/raw")):
+    DATA_PATH = os.path.join(PROJECT_ROOT, "data/raw")
+else:
+    DATA_PATH = os.path.join(PROJECT_ROOT, "RAF-DB/")
+
 PROCESSED_PATH = os.path.join(PROJECT_ROOT, "data/processed/")
 RESULTS_PATH = os.path.join(PROJECT_ROOT, "results/")
 

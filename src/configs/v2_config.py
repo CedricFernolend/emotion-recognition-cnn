@@ -1,33 +1,41 @@
 """
-V2 Configuration: To Be Defined
+V2 Configuration: 4-Block CNN with SE Attention
 
-This version will be designed after analyzing v1 results.
-Placeholder configuration - copy from v1 and modify as needed.
+Changes from V1:
+- Lower learning rate (0.0001 vs 0.001) for more stable training
+- Class weights enabled to address class imbalance
+- 4 blocks instead of 3 (added 512-channel block)
+- SE attention enabled
+- Light weight decay for regularization
+
+NOT adding yet (save for V3 if needed):
+- Focal Loss
+- Spatial Attention
+- Label Smoothing
 """
 from configs.base_config import *
 
 VERSION = "v2"
-VERSION_NAME = "V2 - TBD"
-VERSION_DESCRIPTION = "To be defined after v1 analysis"
+VERSION_NAME = "V2 - SE Attention + 4 Blocks"
+VERSION_DESCRIPTION = "4-block CNN with SE attention, lower LR, class weights"
 
-# TODO: Define after v1 training results
-# Copy settings from v1_config.py and modify based on analysis
-
-# Placeholder - same as v1 for now
-NUM_BLOCKS = 3
-USE_SE_ATTENTION = False
+# Architecture
+NUM_BLOCKS = 4
+USE_SE_ATTENTION = True
 USE_SPATIAL_ATTENTION = False
-FILTER_PROGRESSION = [64, 128, 256]
+FILTER_PROGRESSION = [64, 128, 256, 512]
 CLASSIFIER_HIDDEN = 128
 
-LEARNING_RATE = 0.001
+# Training hyperparameters
+LEARNING_RATE = 0.0001      # Lower than V1 (was 0.001)
 NUM_EPOCHS = 60
 DROPOUT_RATE = 0.5
-USE_CLASS_WEIGHTS = False
-LABEL_SMOOTHING = 0.0
-WEIGHT_DECAY = 0.0
+USE_CLASS_WEIGHTS = True    # Keep from V1 to address imbalance
+LABEL_SMOOTHING = 0.0       # Not using yet
+WEIGHT_DECAY = 1e-4         # Light regularization
 USE_LR_SCHEDULER = False
 
+# Augmentation (same as V1)
 AUGMENTATION = {
     'horizontal_flip': True,
     'rotation': 15,
@@ -37,6 +45,7 @@ AUGMENTATION = {
     'random_erasing': False,
 }
 
+# Version-specific paths
 _paths = get_version_paths(VERSION)
 MODEL_SAVE_PATH = _paths['model_path']
 HISTORY_SAVE_PATH = _paths['history_path']

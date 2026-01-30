@@ -13,7 +13,7 @@ def get_config_and_model(version):
     """Load config and create model for specified version."""
     if version is None:
         # Backward compatible: use default config and model
-        from config import LEARNING_RATE, NUM_EPOCHS, MODEL_SAVE_PATH, USE_CLASS_WEIGHTS
+        from config import LEARNING_RATE, NUM_EPOCHS, MODEL_SAVE_PATH, USE_CLASS_WEIGHTS, DROPOUT_RATE
         from model import create_model
         return {
             'version': 'default',
@@ -21,6 +21,7 @@ def get_config_and_model(version):
             'NUM_EPOCHS': NUM_EPOCHS,
             'MODEL_SAVE_PATH': MODEL_SAVE_PATH,
             'USE_CLASS_WEIGHTS': USE_CLASS_WEIGHTS,
+            'DROPOUT_RATE': DROPOUT_RATE,
             'LABEL_SMOOTHING': 0.1,
             'WEIGHT_DECAY': 1e-4,
             'USE_LR_SCHEDULER': True,
@@ -36,13 +37,16 @@ def get_config_and_model(version):
         from configs import load_config
         from models import create_model
         config = load_config(version)
-        model = create_model(version)
+        dropout_rate = getattr(config, 'DROPOUT_RATE', 0.5)
+        model = create_model(version, dropout_rate=dropout_rate)
         return {
             'version': config.VERSION,
+            'version_name': getattr(config, 'VERSION_NAME', version),
             'LEARNING_RATE': config.LEARNING_RATE,
             'NUM_EPOCHS': config.NUM_EPOCHS,
             'MODEL_SAVE_PATH': config.MODEL_SAVE_PATH,
             'USE_CLASS_WEIGHTS': getattr(config, 'USE_CLASS_WEIGHTS', False),
+            'DROPOUT_RATE': dropout_rate,
             'LABEL_SMOOTHING': getattr(config, 'LABEL_SMOOTHING', 0.0),
             'WEIGHT_DECAY': getattr(config, 'WEIGHT_DECAY', 0.0),
             'USE_LR_SCHEDULER': getattr(config, 'USE_LR_SCHEDULER', False),
@@ -149,6 +153,23 @@ def train_model(version=None):
         print(f"GPU: {torch.cuda.get_device_name(0)}")
 
     print(f"\nTraining model version: {cfg['version']}")
+    if 'version_name' in cfg:
+        print(f"Model name: {cfg['version_name']}")
+
+    # Print configuration summary
+    print("\n" + "="*50)
+    print("Configuration Summary")
+    print("="*50)
+    print(f"  Learning Rate:     {cfg['LEARNING_RATE']}")
+    print(f"  Weight Decay:      {cfg['WEIGHT_DECAY']}")
+    print(f"  Dropout Rate:      {cfg['DROPOUT_RATE']}")
+    print(f"  Epochs (max):      {cfg['NUM_EPOCHS']}")
+    print(f"  Early Stop:        {cfg['EARLY_STOPPING_PATIENCE']} epochs")
+    print(f"  Class Weights:     {cfg['USE_CLASS_WEIGHTS']}")
+    print(f"  Label Smoothing:   {cfg['LABEL_SMOOTHING']}")
+    print(f"  LR Scheduler:      {cfg['USE_LR_SCHEDULER']}")
+    print(f"  Model Save Path:   {cfg['MODEL_SAVE_PATH']}")
+    print("="*50)
 
     # Create output directories
     os.makedirs(os.path.dirname(cfg['MODEL_SAVE_PATH']), exist_ok=True)
