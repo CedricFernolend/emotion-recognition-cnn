@@ -12,11 +12,11 @@
 #   MODEL_VERSIONS="v2" sbatch train_gpu.slurm        # Train only v2
 #   MODEL_VERSIONS="all" sbatch train_gpu.slurm       # Train all versions
 #   sbatch train_gpu.slurm                            # Default: train v1 and v2
-MODEL_VERSIONS=${MODEL_VERSIONS:-"v1 v2"}
+MODEL_VERSIONS=${MODEL_VERSIONS:-"v1 v2 v4"}
 
 # Expand "all" to all versions
 if [ "$MODEL_VERSIONS" = "all" ]; then
-    MODEL_VERSIONS="v1 v2 v3 v4"
+    MODEL_VERSIONS="v1 v2 v4"
 fi
 
 # Print job info

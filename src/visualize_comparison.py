@@ -31,7 +31,7 @@ def load_history(version):
 def get_available_trained_versions():
     """Get list of versions that have been trained (have history.json)."""
     versions = []
-    for v in ['v1', 'v2', 'v3', 'v4']:
+    for v in ['v1', 'v2', 'v4']:
         history_path = os.path.join(RESULTS_PATH, v, 'history.json')
         if os.path.exists(history_path):
             versions.append(v)
@@ -53,7 +53,7 @@ def plot_training_curves_comparison(versions=None, save_path=None):
         print("No trained versions found!")
         return
 
-    colors = {'v1': 'blue', 'v2': 'green', 'v3': 'orange', 'v4': 'red'}
+    colors = {'v1': 'blue', 'v2': 'green', 'v4': 'red'}
     fig, axes = plt.subplots(1, 2, figsize=(14, 5))
 
     for version in versions:
