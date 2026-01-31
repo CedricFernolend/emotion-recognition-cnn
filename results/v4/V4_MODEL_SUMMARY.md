@@ -186,7 +186,7 @@ Output (spatially-weighted)
 | Optimizer | Adam |
 | Weight Decay | 1e-4 |
 | Batch Size | 32 |
-| Max Epochs | 60 |
+| Max Epochs | 500 (early stopping) |
 | Early Stopping | 10 epochs patience |
 | Loss Function | CrossEntropyLoss (weighted) |
 | Label Smoothing | 0.1 |
@@ -245,16 +245,16 @@ Output (spatially-weighted)
 
 ---
 
-## Expected Results
+## Actual Results
 
-Based on V4 enhancements:
+Training completed successfully:
 
-- [ ] Predictions spread across ALL 6 classes
-- [ ] Per-class recall > 20% for every emotion
-- [ ] Overall accuracy: 55-65%
-- [ ] Better calibrated confidence scores (due to label smoothing)
-- [ ] Improved focus on facial regions (visible in GradCAM)
-- [ ] More stable training (due to LR scheduler)
+- [x] Predictions spread across ALL 6 classes
+- [x] Per-class recall > 20% for every emotion
+- [x] **Test accuracy: 71.74%** (trained for ~60 epochs with early stopping)
+- [x] Better calibrated confidence scores (due to label smoothing)
+- [x] Improved focus on facial regions (visible in spatial attention maps)
+- [x] Stable training (LR scheduler reduced LR as needed)
 
 ---
 
@@ -262,7 +262,7 @@ Based on V4 enhancements:
 
 **Method**: Grad-CAM (Gradient-weighted Class Activation Mapping)
 
-**Target Layer**: Last Conv2d in Layer 4 (`layer4.body[-3]`)
+**Target Layer**: Last Conv2d in Layer 4 (`layer4.body[-2]`)
 
 **Purpose**: Visualize which facial regions the model focuses on. V4's spatial attention should show more focused activations on relevant facial features.
 

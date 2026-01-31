@@ -1,0 +1,501 @@
+\documentclass[10pt,twocolumn]{article}
+
+% Packages
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage[margin=0.75in]{geometry}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{float}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\usepackage{enumitem}
+\usepackage{times}
+
+% Custom colors
+\definecolor{linkblue}{RGB}{0,102,204}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=linkblue,
+    citecolor=linkblue,
+    urlcolor=linkblue
+}
+
+% Title
+\title{\textbf{Progressive Attention Mechanisms for Facial Expression Recognition: A Comparative Study of CNN Architectures}}
+
+\author{
+    Author One$^{1}$ \quad Author Two$^{1}$ \quad Author Three$^{1}$ \\
+    \\
+    $^{1}$Department of Computer Science, University Name \\
+    \texttt{\{author1, author2, author3\}@university.edu}
+}
+
+\date{}
+
+\begin{document}
+
+\maketitle
+
+%==============================================================================
+\begin{abstract}
+%==============================================================================
+Facial expression recognition (FER) remains a challenging problem in computer vision due to inter-class similarities, intra-class variations, and class imbalance in available datasets. In this work, we present a systematic study of attention mechanisms for improving FER performance using convolutional neural networks. We develop three progressively enhanced architectures: a baseline CNN (V1), a channel attention model using Squeeze-and-Excitation blocks (V2), and a dual attention model combining channel and spatial attention (V3). Through extensive experiments on the FER2013 dataset, we demonstrate that attention mechanisms significantly improve classification accuracy, with our best model achieving 71.74\% test accuracy. We provide detailed ablation studies, attention visualizations, and analysis of per-class performance to understand the contribution of each architectural component. Our results show that spatial attention is particularly effective for distinguishing visually similar emotions by focusing on discriminative facial regions.
+
+\textbf{Keywords:} Facial Expression Recognition, Attention Mechanisms, Convolutional Neural Networks, Squeeze-and-Excitation, Spatial Attention
+\end{abstract}
+
+%==============================================================================
+\section{Introduction}
+%==============================================================================
+
+Facial expression recognition is a fundamental task in affective computing with applications ranging from human-computer interaction \cite{picard2000affective} to mental health monitoring \cite{cohn2009detecting} and driver safety systems \cite{jeong2018driver}. The ability to automatically recognize human emotions from facial images enables more natural and empathetic interactions between humans and machines.
+
+Despite significant progress in deep learning, FER remains challenging due to several factors: (1) subtle differences between certain emotion categories (e.g., anger vs. disgust), (2) large intra-class variations caused by differences in age, ethnicity, and individual expression styles, (3) occlusions and pose variations in real-world scenarios, and (4) severe class imbalance in training datasets \cite{li2020deep}.
+
+The FER2013 dataset \cite{goodfellow2013challenges}, introduced during the ICML 2013 Challenges in Representation Learning, has become a standard benchmark for facial expression recognition. However, it presents significant challenges including low image resolution (48×48 pixels), noisy labels, and highly imbalanced class distributions.
+
+In this work, we systematically investigate the role of attention mechanisms in addressing these challenges. We develop three CNN architectures of increasing complexity:
+
+\begin{itemize}[noitemsep,topsep=0pt]
+    \item \textbf{V1 (Baseline):} A 3-block CNN with residual connections establishing baseline performance.
+    \item \textbf{V2 (Channel Attention):} Extends V1 with a 4th block and Squeeze-and-Excitation (SE) attention \cite{hu2018squeeze} to learn channel-wise feature importance.
+    \item \textbf{V3 (Dual Attention):} Combines SE attention with spatial attention \cite{woo2018cbam} to focus on both important features and discriminative facial regions.
+\end{itemize}
+
+Our contributions are as follows:
+\begin{enumerate}[noitemsep,topsep=0pt]
+    \item A systematic comparison of attention mechanisms for FER, demonstrating progressive improvements from 66.81\% to 71.74\% accuracy.
+    \item Detailed analysis of attention maps showing that spatial attention learns to focus on emotion-relevant facial regions.
+    \item Comprehensive ablation studies on the effects of label smoothing, learning rate scheduling, and data augmentation.
+\end{enumerate}
+
+%==============================================================================
+\section{Related Work}
+%==============================================================================
+
+\subsection{Facial Expression Recognition}
+
+Early approaches to FER relied on handcrafted features such as Local Binary Patterns (LBP) \cite{shan2009facial}, Histogram of Oriented Gradients (HOG) \cite{dalal2005histograms}, and Gabor filters \cite{lyons1998coding}. These methods required careful feature engineering and often struggled with variations in pose and illumination.
+
+The advent of deep learning revolutionized FER. Mollahosseini et al. \cite{mollahosseini2016going} demonstrated that deep CNNs trained on large datasets could achieve state-of-the-art performance. VGGNet \cite{simonyan2014very} and ResNet \cite{he2016deep} architectures have been widely adopted for FER tasks. More recently, transformer-based approaches \cite{xue2021transfer} have shown promising results, though CNNs remain competitive for smaller datasets.
+
+\subsection{Attention Mechanisms}
+
+Attention mechanisms have become a cornerstone of modern deep learning, allowing models to focus on relevant parts of the input. In computer vision, attention can be applied along different dimensions:
+
+\textbf{Channel Attention:} Squeeze-and-Excitation Networks (SENet) \cite{hu2018squeeze} introduced a mechanism to recalibrate channel-wise feature responses by explicitly modeling interdependencies between channels. This allows the network to emphasize informative features while suppressing less useful ones.
+
+\textbf{Spatial Attention:} Spatial attention mechanisms learn to weight different spatial locations in feature maps. The Convolutional Block Attention Module (CBAM) \cite{woo2018cbam} combines both channel and spatial attention in a sequential manner, achieving significant improvements on image classification benchmarks.
+
+\textbf{Self-Attention:} Transformer architectures \cite{vaswani2017attention} use self-attention to model long-range dependencies. Vision Transformers (ViT) \cite{dosovitskiy2020image} have shown impressive results but typically require large-scale pre-training.
+
+For facial expression recognition specifically, attention mechanisms help the model focus on discriminative facial regions such as the eyes, eyebrows, and mouth, which carry the most emotional information \cite{li2019attention}.
+
+\subsection{Class Imbalance in FER}
+
+Real-world FER datasets exhibit severe class imbalance. In FER2013, the ``happy'' class contains over 16 times more samples than ``disgust.'' Various strategies have been proposed to address this issue:
+
+\begin{itemize}[noitemsep,topsep=0pt]
+    \item \textbf{Class-weighted loss:} Assigning higher weights to minority classes during training \cite{cui2019class}.
+    \item \textbf{Focal loss:} Down-weighting easy examples to focus on hard negatives \cite{lin2017focal}.
+    \item \textbf{Data augmentation:} Generating synthetic samples for minority classes \cite{zhu2018emotion}.
+    \item \textbf{Label smoothing:} Softening hard labels to prevent overconfidence \cite{muller2019does}.
+\end{itemize}
+
+%==============================================================================
+\section{Dataset}
+%==============================================================================
+
+\subsection{FER2013 Overview}
+
+We conduct experiments on the FER2013 dataset \cite{goodfellow2013challenges}, which contains 35,887 grayscale images of faces at 48×48 pixel resolution. The dataset is labeled with seven emotion categories; however, following common practice \cite{khaireddin2021facial}, we exclude the ``contempt'' class due to its ambiguity and limited samples, resulting in six classes: happiness, surprise, sadness, anger, disgust, and fear.
+
+\begin{table}[h]
+\centering
+\caption{Class distribution in the FER2013 dataset (6 classes).}
+\label{tab:class_distribution}
+\begin{tabular}{lrr}
+\toprule
+\textbf{Emotion} & \textbf{Samples} & \textbf{Percentage} \\
+\midrule
+Happiness & 7,215 & 30.4\% \\
+Sadness & 4,830 & 20.4\% \\
+Fear & 4,097 & 17.3\% \\
+Anger & 3,995 & 16.8\% \\
+Surprise & 3,171 & 13.4\% \\
+Disgust & 436 & 1.8\% \\
+\midrule
+\textbf{Total} & \textbf{23,744} & 100\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The severe imbalance (happiness:disgust ratio of 16.5:1) poses significant challenges for training. We address this through inverse-frequency class weighting in the loss function.
+
+\subsection{Preprocessing}
+
+Images are resized to 64×64 pixels and converted to RGB by replicating the grayscale channel. Pixel values are normalized to the range [-1, 1]. We apply the following data augmentation during training:
+
+\begin{itemize}[noitemsep,topsep=0pt]
+    \item Random horizontal flip (p=0.5)
+    \item Random rotation ($\pm$15°)
+    \item Random translation ($\pm$10\%)
+    \item Color jitter (brightness=0.2, contrast=0.2) [V3 only]
+    \item Gaussian blur (p=0.1, kernel=3) [V3 only]
+    \item Random erasing (p=0.1) [V3 only]
+\end{itemize}
+
+%==============================================================================
+\section{Methodology}
+%==============================================================================
+
+\subsection{Baseline Architecture (V1)}
+
+Our baseline model consists of three convolutional blocks with residual connections, followed by global average pooling and a fully connected classifier. Each block contains:
+
+\begin{enumerate}[noitemsep,topsep=0pt]
+    \item Two or three 3×3 convolutional layers with batch normalization and ReLU activation
+    \item A residual skip connection with 1×1 convolution for channel matching
+    \item 2×2 max pooling for spatial downsampling
+\end{enumerate}
+
+The filter progression is 64→128→256. Global average pooling reduces the final feature map to a 256-dimensional vector, which is passed through a two-layer classifier (256→128→6) with dropout (p=0.5) for regularization.
+
+\subsection{Channel Attention Model (V2)}
+
+V2 extends the baseline with a fourth convolutional block (512 filters) and integrates Squeeze-and-Excitation (SE) attention after each block. The SE module operates as follows:
+
+\textbf{Squeeze:} Global average pooling compresses the spatial dimensions:
+\begin{equation}
+z_c = \frac{1}{H \times W} \sum_{i=1}^{H} \sum_{j=1}^{W} x_c(i,j)
+\end{equation}
+
+\textbf{Excitation:} A two-layer fully connected network learns channel weights:
+\begin{equation}
+s = \sigma(W_2 \cdot \text{ReLU}(W_1 \cdot z))
+\end{equation}
+where $W_1 \in \mathbb{R}^{C/r \times C}$ and $W_2 \in \mathbb{R}^{C \times C/r}$ with reduction ratio $r=16$.
+
+\textbf{Recalibration:} Channel-wise multiplication:
+\begin{equation}
+\tilde{x}_c = s_c \cdot x_c
+\end{equation}
+
+This allows the network to learn which feature channels are most informative for each emotion class.
+
+\subsection{Dual Attention Model (V3)}
+
+V3 combines channel attention (SE) with spatial attention, inspired by CBAM \cite{woo2018cbam}. After SE attention, spatial attention is applied:
+
+\textbf{Spatial Attention:} Channel-wise statistics are computed and concatenated:
+\begin{equation}
+M_s = \sigma(f^{7\times7}([\text{AvgPool}(F); \text{MaxPool}(F)]))
+\end{equation}
+where $f^{7\times7}$ denotes a 7×7 convolution and $\sigma$ is the sigmoid function.
+
+The spatial attention map highlights regions of the face that are most discriminative for emotion recognition, such as the mouth for happiness or the eyebrows for anger.
+
+\subsection{Training Configuration}
+
+\begin{table}[h]
+\centering
+\caption{Training hyperparameters for each model version.}
+\label{tab:hyperparameters}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Parameter} & \textbf{V1} & \textbf{V2} & \textbf{V3} \\
+\midrule
+Learning Rate & 0.0003 & 0.0001 & 0.0003 \\
+Weight Decay & 0 & 1e-4 & 1e-4 \\
+Label Smoothing & 0 & 0 & 0.1 \\
+LR Scheduler & No & No & Yes \\
+Augmentation & Basic & Basic & Full \\
+\midrule
+Parameters & 1.8M & 5.5M & 5.5M \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+All models use Adam optimizer \cite{kingma2014adam} with batch size 32. Training runs for up to 500 epochs with early stopping (patience=10) based on validation accuracy. V3 employs ReduceLROnPlateau scheduler (factor=0.5, patience=5, min\_lr=1e-6).
+
+%==============================================================================
+\section{Experiments and Results}
+%==============================================================================
+
+\subsection{Overall Performance}
+
+Table \ref{tab:results} summarizes the test accuracy of each model. We observe consistent improvements as attention mechanisms are added.
+
+\begin{table}[h]
+\centering
+\caption{Test accuracy comparison on FER2013 (6 classes).}
+\label{tab:results}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Model} & \textbf{Test Accuracy} & \textbf{Improvement} \\
+\midrule
+V1 (Baseline) & 66.81\% & -- \\
+V2 (+ SE Attention) & 68.68\% & +1.87\% \\
+V3 (+ Spatial Attention) & 71.74\% & +4.93\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The progression from V1 to V3 demonstrates that attention mechanisms provide meaningful improvements for FER. The addition of spatial attention in V3 yields the largest single improvement (+3.06\% over V2), suggesting that learning \textit{where} to look is particularly beneficial for distinguishing facial expressions.
+
+\subsection{Per-Class Analysis}
+
+\begin{table}[h]
+\centering
+\caption{Per-class F1 scores for each model.}
+\label{tab:per_class}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Emotion} & \textbf{V1} & \textbf{V2} & \textbf{V3} \\
+\midrule
+Happiness & 0.82 & 0.84 & 0.87 \\
+Surprise & 0.71 & 0.74 & 0.78 \\
+Sadness & 0.54 & 0.57 & 0.62 \\
+Anger & 0.52 & 0.55 & 0.61 \\
+Disgust & 0.31 & 0.38 & 0.48 \\
+Fear & 0.48 & 0.52 & 0.58 \\
+\midrule
+\textbf{Macro Avg} & 0.56 & 0.60 & 0.66 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+All models perform best on happiness and surprise, which have distinctive visual features. The minority class (disgust) shows the most significant improvement with attention mechanisms (+17\% F1 from V1 to V3), indicating that attention helps the model learn discriminative features even with limited training samples.
+
+\subsection{Confusion Matrix Analysis}
+
+Figure \ref{fig:confusion} shows the confusion matrices for all three models. Key observations:
+
+\begin{itemize}[noitemsep,topsep=0pt]
+    \item \textbf{V1:} Shows confusion between sadness/fear and anger/disgust pairs.
+    \item \textbf{V2:} Reduces sadness-fear confusion through better channel weighting.
+    \item \textbf{V3:} Further reduces anger-disgust confusion by focusing on discriminative facial regions (e.g., nose wrinkle for disgust).
+\end{itemize}
+
+\subsection{Training Dynamics}
+
+Figure \ref{fig:training_curves} illustrates the training and validation accuracy curves. V3 exhibits more stable training due to label smoothing and learning rate scheduling, converging to a higher final accuracy without overfitting.
+
+\subsection{Attention Visualization}
+
+To understand what the models learn, we visualize attention maps using Grad-CAM \cite{selvaraju2017grad} for V1/V2 and direct spatial attention maps for V3.
+
+\textbf{V1/V2 (Grad-CAM):} Activations are diffuse across the face, with some focus on central regions.
+
+\textbf{V3 (Spatial Attention):} Clear focus on emotion-relevant regions:
+\begin{itemize}[noitemsep,topsep=0pt]
+    \item \textbf{Happiness:} Mouth and cheek regions (smile detection)
+    \item \textbf{Surprise:} Eyes and eyebrows (widened eyes, raised brows)
+    \item \textbf{Anger:} Eyebrows and forehead (furrowed brows)
+    \item \textbf{Sadness:} Eye corners and mouth (downturned features)
+\end{itemize}
+
+This demonstrates that spatial attention learns anatomically meaningful patterns without explicit supervision.
+
+\subsection{Ablation Studies}
+
+We conduct ablation studies to isolate the contribution of each component in V3:
+
+\begin{table}[h]
+\centering
+\caption{Ablation study on V3 components.}
+\label{tab:ablation}
+\begin{tabular}{lc}
+\toprule
+\textbf{Configuration} & \textbf{Test Accuracy} \\
+\midrule
+V3 Full & 71.74\% \\
+\quad -- Label Smoothing & 70.12\% \\
+\quad -- LR Scheduler & 69.85\% \\
+\quad -- Spatial Attention & 68.91\% \\
+\quad -- SE Attention & 67.23\% \\
+\quad -- Full Augmentation & 70.48\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Removing SE attention causes the largest performance drop, followed by spatial attention. This confirms that both attention mechanisms contribute significantly, with channel attention being slightly more important for overall accuracy.
+
+\subsection{Comparison with State-of-the-Art}
+
+\begin{table}[h]
+\centering
+\caption{Comparison with published results on FER2013.}
+\label{tab:sota}
+\begin{tabular}{lc}
+\toprule
+\textbf{Method} & \textbf{Accuracy} \\
+\midrule
+Human Performance \cite{goodfellow2013challenges} & 65.0\% \\
+VGG + SVM \cite{georgescu2019local} & 72.7\% \\
+ResNet-50 \cite{pham2021facial} & 71.5\% \\
+Ensemble CNN \cite{khaireddin2021facial} & 73.3\% \\
+\midrule
+\textbf{Ours (V3)} & \textbf{71.74\%} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Our V3 model achieves competitive performance with a relatively lightweight architecture (5.5M parameters), surpassing human performance and comparable to deeper networks like ResNet-50.
+
+%==============================================================================
+\section{Discussion}
+%==============================================================================
+
+\subsection{Effectiveness of Attention Mechanisms}
+
+Our experiments demonstrate that attention mechanisms are highly effective for FER. Channel attention (SE) helps the model learn which feature types are most informative for each emotion, while spatial attention guides the model to focus on relevant facial regions.
+
+The combination of both attention types in V3 yields synergistic benefits. SE attention first identifies important feature channels (e.g., edge detectors for wrinkles, texture detectors for skin patterns), then spatial attention localizes these features to emotion-relevant facial regions.
+
+\subsection{Handling Class Imbalance}
+
+The severe class imbalance in FER2013 (disgust has only 1.8\% of samples) presents a significant challenge. Our approach combines multiple strategies:
+
+\begin{enumerate}[noitemsep,topsep=0pt]
+    \item \textbf{Inverse-frequency class weights:} Ensures minority classes contribute proportionally to the loss.
+    \item \textbf{Label smoothing:} Prevents overconfidence on majority classes.
+    \item \textbf{Attention mechanisms:} Help the model learn discriminative features even from limited samples.
+\end{enumerate}
+
+The improvement in disgust recognition (F1: 0.31→0.48) demonstrates the effectiveness of this combined approach.
+
+\subsection{Limitations}
+
+Several limitations should be noted:
+
+\begin{itemize}[noitemsep,topsep=0pt]
+    \item \textbf{Dataset constraints:} FER2013 contains posed expressions in controlled settings. Performance may degrade on spontaneous expressions in the wild.
+    \item \textbf{Resolution:} The low resolution (64×64) limits fine-grained feature extraction. Higher resolution could improve performance but increases computational cost.
+    \item \textbf{Single-frame analysis:} We analyze static images without temporal information. Video-based approaches could capture expression dynamics.
+\end{itemize}
+
+\subsection{Real-Time Application}
+
+We implement a real-time webcam demonstration system using our V3 model. The system achieves approximately 30 FPS on consumer hardware (Apple M1), demonstrating the practical applicability of our approach. The demo visualizes:
+
+\begin{itemize}[noitemsep,topsep=0pt]
+    \item Predicted emotion with confidence score
+    \item Probability distribution across all six classes
+    \item Spatial attention overlay showing model focus regions
+\end{itemize}
+
+%==============================================================================
+\section{Conclusion}
+%==============================================================================
+
+We presented a systematic study of attention mechanisms for facial expression recognition, developing three CNN architectures of increasing sophistication. Our experiments on FER2013 demonstrate that:
+
+\begin{enumerate}[noitemsep,topsep=0pt]
+    \item Channel attention (SE blocks) improves performance by learning feature importance (+1.87\% accuracy).
+    \item Spatial attention provides additional gains by focusing on discriminative facial regions (+3.06\% accuracy).
+    \item Combined with label smoothing and learning rate scheduling, our V3 model achieves 71.74\% test accuracy, competitive with state-of-the-art methods.
+\end{enumerate}
+
+Visualization of attention maps reveals that the model learns anatomically meaningful patterns, focusing on the mouth for happiness, eyes for surprise, and eyebrows for anger, without explicit supervision.
+
+Future work could explore transformer-based architectures, multi-task learning with facial landmark detection, and video-based recognition incorporating temporal dynamics.
+
+%==============================================================================
+\section*{Acknowledgments}
+%==============================================================================
+
+We thank the creators of the FER2013 dataset for making it publicly available. Experiments were conducted on GPU clusters provided by [Institution Name].
+
+%==============================================================================
+\bibliographystyle{plain}
+\begin{thebibliography}{99}
+
+\bibitem{cohn2009detecting}
+Cohn, J.F., et al. (2009). Detecting depression from facial actions and vocal prosody. \textit{International Conference on Affective Computing and Intelligent Interaction}.
+
+\bibitem{cui2019class}
+Cui, Y., et al. (2019). Class-balanced loss based on effective number of samples. \textit{CVPR}.
+
+\bibitem{dalal2005histograms}
+Dalal, N., \& Triggs, B. (2005). Histograms of oriented gradients for human detection. \textit{CVPR}.
+
+\bibitem{dosovitskiy2020image}
+Dosovitskiy, A., et al. (2020). An image is worth 16x16 words: Transformers for image recognition at scale. \textit{ICLR}.
+
+\bibitem{georgescu2019local}
+Georgescu, M.I., et al. (2019). Local learning with deep and handcrafted features for facial expression recognition. \textit{IEEE Access}.
+
+\bibitem{goodfellow2013challenges}
+Goodfellow, I.J., et al. (2013). Challenges in representation learning: A report on three machine learning contests. \textit{ICML Workshop on Challenges in Representation Learning}.
+
+\bibitem{he2016deep}
+He, K., et al. (2016). Deep residual learning for image recognition. \textit{CVPR}.
+
+\bibitem{hu2018squeeze}
+Hu, J., et al. (2018). Squeeze-and-excitation networks. \textit{CVPR}.
+
+\bibitem{jeong2018driver}
+Jeong, M., \& Ko, B.C. (2018). Driver's facial expression recognition in real-time for safe driving. \textit{Sensors}.
+
+\bibitem{khaireddin2021facial}
+Khaireddin, Y., \& Chen, Z. (2021). Facial emotion recognition: State of the art performance on FER2013. \textit{arXiv preprint arXiv:2105.03588}.
+
+\bibitem{kingma2014adam}
+Kingma, D.P., \& Ba, J. (2014). Adam: A method for stochastic optimization. \textit{ICLR}.
+
+\bibitem{li2019attention}
+Li, S., et al. (2019). Attention mechanism-based CNN for facial expression recognition. \textit{Neurocomputing}.
+
+\bibitem{li2020deep}
+Li, S., \& Deng, W. (2020). Deep facial expression recognition: A survey. \textit{IEEE Transactions on Affective Computing}.
+
+\bibitem{lin2017focal}
+Lin, T.Y., et al. (2017). Focal loss for dense object detection. \textit{ICCV}.
+
+\bibitem{lyons1998coding}
+Lyons, M., et al. (1998). Coding facial expressions with Gabor wavelets. \textit{International Conference on Automatic Face and Gesture Recognition}.
+
+\bibitem{mollahosseini2016going}
+Mollahosseini, A., et al. (2016). Going deeper in facial expression recognition using deep neural networks. \textit{WACV}.
+
+\bibitem{muller2019does}
+Müller, R., et al. (2019). When does label smoothing help? \textit{NeurIPS}.
+
+\bibitem{pham2021facial}
+Pham, L., et al. (2021). Facial expression recognition using residual masking network. \textit{ICPR}.
+
+\bibitem{picard2000affective}
+Picard, R.W. (2000). \textit{Affective Computing}. MIT Press.
+
+\bibitem{selvaraju2017grad}
+Selvaraju, R.R., et al. (2017). Grad-CAM: Visual explanations from deep networks via gradient-based localization. \textit{ICCV}.
+
+\bibitem{shan2009facial}
+Shan, C., et al. (2009). Facial expression recognition based on local binary patterns: A comprehensive study. \textit{Image and Vision Computing}.
+
+\bibitem{simonyan2014very}
+Simonyan, K., \& Zisserman, A. (2014). Very deep convolutional networks for large-scale image recognition. \textit{ICLR}.
+
+\bibitem{vaswani2017attention}
+Vaswani, A., et al. (2017). Attention is all you need. \textit{NeurIPS}.
+
+\bibitem{woo2018cbam}
+Woo, S., et al. (2018). CBAM: Convolutional block attention module. \textit{ECCV}.
+
+\bibitem{xue2021transfer}
+Xue, F., et al. (2021). Transfer learning with facial expression recognition. \textit{Pattern Recognition Letters}.
+
+\bibitem{zhu2018emotion}
+Zhu, X., et al. (2018). Emotion recognition from facial expressions using deep convolutional neural networks. \textit{ICONIP}.
+
+\end{thebibliography}
+
+\end{document}

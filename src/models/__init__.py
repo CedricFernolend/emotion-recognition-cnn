@@ -61,14 +61,15 @@ def get_gradcam_target_layer(model, version: str):
         Target layer for GradCAM
     """
     if version == 'v1':
-        # Last conv in block3 for 3-block model
+        # V1: 3-block model, target last conv in block3
         return model.block3.body[-2]  # Conv2d before final BN
     elif version == 'v2':
-        # V2 has 4 blocks with SE attention - target last conv in block4
-        return model.block4.body[-2]  # Conv2d before final BN in block4
+        # V2: 4-block model with SE, target last conv in block4
+        return model.block4.body[-2]  # Conv2d before final BN
     elif version == 'v4':
-        # Last conv in layer4 for 4-block model
-        return model.layer4.body[-3]
+        # V4: 4-block model with SE + Spatial attention
+        # body[-2] is the last Conv2d (body[-3] was ReLU - wrong!)
+        return model.layer4.body[-2]  # Conv2d before final BN
     else:
         raise ValueError(f"Unknown model version for GradCAM: {version}")
 

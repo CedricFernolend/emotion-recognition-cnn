@@ -129,7 +129,7 @@ Input: 64×64 RGB Image (normalized to [-1, 1])
 
 **Method**: Grad-CAM (Gradient-weighted Class Activation Mapping)
 
-**Target Layer**: Last Conv2d in Block 3 (`block3.body[-3]`)
+**Target Layer**: Last Conv2d in Block 3 (`block3.body[-2]`)
 
 **Purpose**: Visualize which facial regions the model focuses on for each prediction
 
