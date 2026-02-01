@@ -20,7 +20,7 @@ CLASSIFIER_HIDDEN = 128
 
 # Training hyperparameters (same as v4)
 LEARNING_RATE = 0.0003
-NUM_EPOCHS = 500  # High value - early stopping will handle termination
+NUM_EPOCHS = 60  # High value - early stopping will handle termination
 DROPOUT_RATE = 0.6
 USE_CLASS_WEIGHTS = True
 LABEL_SMOOTHING = 0.15

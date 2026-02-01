@@ -305,8 +305,8 @@ def train_model(version=None):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Train emotion recognition model')
     parser.add_argument('--version', type=str, default=None,
-                        choices=['v1', 'v2', 'v4'],
-                        help='Model version to train (v1, v2, v4). If not specified, uses default config.')
+                        choices=['v1', 'v2', 'v3.5', 'v4'],
+                        help='Model version to train (v1, v2, v3.5, v4). If not specified, uses default config.')
     args = parser.parse_args()
 
     model, history = train_model(version=args.version)
