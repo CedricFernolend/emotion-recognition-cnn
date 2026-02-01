@@ -19,11 +19,14 @@ def create_model(version: str, dropout_rate: float = 0.5):
     elif version == 'v2':
         from models.v2_model import EmotionCNN_V2
         return EmotionCNN_V2(num_classes=6, dropout_rate=dropout_rate)
+    elif version == 'v3.5':
+        from models.v3_5 import EmotionCNN
+        return EmotionCNN(num_classes=6, dropout_rate=dropout_rate)
     elif version == 'v4':
         from models.v4_final import EmotionCNN
         return EmotionCNN(num_classes=6, dropout_rate=dropout_rate)
     else:
-        raise ValueError(f"Unknown model version: {version}. Available: v1, v2, v4")
+        raise ValueError(f"Unknown model version: {version}. Available: v1, v2, v3.5, v4")
 
 
 def load_model(version: str, path: str = None):
@@ -66,6 +69,9 @@ def get_gradcam_target_layer(model, version: str):
     elif version == 'v2':
         # V2: 4-block model with SE, target last conv in block4
         return model.block4.body[-2]  # Conv2d before final BN
+    elif version == 'v3.5':
+        # V3.5: 4-block model without attention (same structure as v4)
+        return model.layer4.body[-2]  # Conv2d before final BN
     elif version == 'v4':
         # V4: 4-block model with SE + Spatial attention
         # body[-2] is the last Conv2d (body[-3] was ReLU - wrong!)
