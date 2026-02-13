@@ -10,54 +10,30 @@ import matplotlib.pyplot as plt
 
 
 def get_config_and_model(version):
-    """Load config and create model for specified version."""
-    if version is None:
-        # Backward compatible: use default config and model
-        from config import LEARNING_RATE, NUM_EPOCHS, MODEL_SAVE_PATH, USE_CLASS_WEIGHTS, DROPOUT_RATE
-        from model import create_model
-        return {
-            'version': 'default',
-            'LEARNING_RATE': LEARNING_RATE,
-            'NUM_EPOCHS': NUM_EPOCHS,
-            'MODEL_SAVE_PATH': MODEL_SAVE_PATH,
-            'USE_CLASS_WEIGHTS': USE_CLASS_WEIGHTS,
-            'DROPOUT_RATE': DROPOUT_RATE,
-            'LABEL_SMOOTHING': 0.1,
-            'WEIGHT_DECAY': 1e-4,
-            'USE_LR_SCHEDULER': True,
-            'LR_SCHEDULER_FACTOR': 0.5,
-            'LR_SCHEDULER_PATIENCE': 5,
-            'LR_MIN': 1e-6,
-            'EARLY_STOPPING_PATIENCE': 10,
-            'AUGMENTATION': None,  # Use default
-            'HISTORY_SAVE_PATH': None,
-            'VIZ_PATH': 'results/visualizations/',
-        }, create_model()
-    else:
-        from configs import load_config
-        from models import create_model
-        config = load_config(version)
-        dropout_rate = getattr(config, 'DROPOUT_RATE', 0.5)
-        model = create_model(version, dropout_rate=dropout_rate)
-        return {
-            'version': config.VERSION,
-            'version_name': getattr(config, 'VERSION_NAME', version),
-            'LEARNING_RATE': config.LEARNING_RATE,
-            'NUM_EPOCHS': config.NUM_EPOCHS,
-            'MODEL_SAVE_PATH': config.MODEL_SAVE_PATH,
-            'USE_CLASS_WEIGHTS': getattr(config, 'USE_CLASS_WEIGHTS', False),
-            'DROPOUT_RATE': dropout_rate,
-            'LABEL_SMOOTHING': getattr(config, 'LABEL_SMOOTHING', 0.0),
-            'WEIGHT_DECAY': getattr(config, 'WEIGHT_DECAY', 0.0),
-            'USE_LR_SCHEDULER': getattr(config, 'USE_LR_SCHEDULER', False),
-            'LR_SCHEDULER_FACTOR': getattr(config, 'LR_SCHEDULER_FACTOR', 0.5),
-            'LR_SCHEDULER_PATIENCE': getattr(config, 'LR_SCHEDULER_PATIENCE', 5),
-            'LR_MIN': getattr(config, 'LR_MIN', 1e-6),
-            'EARLY_STOPPING_PATIENCE': getattr(config, 'EARLY_STOPPING_PATIENCE', 10),
-            'AUGMENTATION': getattr(config, 'AUGMENTATION', None),
-            'HISTORY_SAVE_PATH': getattr(config, 'HISTORY_SAVE_PATH', None),
-            'VIZ_PATH': getattr(config, 'VIZ_PATH', f'results/{version}/visualizations/'),
-        }, model
+    from configs import load_config
+    from models import create_model
+    config = load_config(version)
+    dropout_rate = getattr(config, 'DROPOUT_RATE', 0.5)
+    model = create_model(version, dropout_rate=dropout_rate)
+    return {
+        'version': config.VERSION,
+        'version_name': getattr(config, 'VERSION_NAME', version),
+        'LEARNING_RATE': config.LEARNING_RATE,
+        'NUM_EPOCHS': config.NUM_EPOCHS,
+        'MODEL_SAVE_PATH': config.MODEL_SAVE_PATH,
+        'USE_CLASS_WEIGHTS': getattr(config, 'USE_CLASS_WEIGHTS', False),
+        'DROPOUT_RATE': dropout_rate,
+        'LABEL_SMOOTHING': getattr(config, 'LABEL_SMOOTHING', 0.0),
+        'WEIGHT_DECAY': getattr(config, 'WEIGHT_DECAY', 0.0),
+        'USE_LR_SCHEDULER': getattr(config, 'USE_LR_SCHEDULER', False),
+        'LR_SCHEDULER_FACTOR': getattr(config, 'LR_SCHEDULER_FACTOR', 0.5),
+        'LR_SCHEDULER_PATIENCE': getattr(config, 'LR_SCHEDULER_PATIENCE', 5),
+        'LR_MIN': getattr(config, 'LR_MIN', 1e-6),
+        'EARLY_STOPPING_PATIENCE': getattr(config, 'EARLY_STOPPING_PATIENCE', 10),
+        'AUGMENTATION': getattr(config, 'AUGMENTATION', None),
+        'HISTORY_SAVE_PATH': getattr(config, 'HISTORY_SAVE_PATH', None),
+        'VIZ_PATH': getattr(config, 'VIZ_PATH', f'results/{version}/visualizations/'),
+    }, model
 
 
 def train_one_epoch(model, train_loader, criterion, optimizer, device):
@@ -304,9 +280,9 @@ def train_model(version=None):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Train emotion recognition model')
-    parser.add_argument('--version', type=str, default=None,
-                        choices=['v1', 'v2', 'v3.5', 'v4'],
-                        help='Model version to train (v1, v2, v3.5, v4). If not specified, uses default config.')
+    parser.add_argument('--version', type=str, default="v3",
+                        choices=['v1', 'v2', 'v3'],
+                        help='Model version to train (v1, v2, v3)')
     args = parser.parse_args()
 
     model, history = train_model(version=args.version)

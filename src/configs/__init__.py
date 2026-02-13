@@ -7,7 +7,7 @@ def load_config(version: str):
     Load configuration for a specific model version.
 
     Args:
-        version: Model version string ('v1', 'v2', 'v3', 'v4')
+        version: Model version string ('v1', 'v2', 'v3')
 
     Returns:
         Config module with version-specific settings
@@ -15,8 +15,7 @@ def load_config(version: str):
     configs = {
         'v1': 'configs.v1_config',
         'v2': 'configs.v2_config',
-        'v3.5': 'configs.v3_5_config',
-        'v4': 'configs.v4_config',
+        'v3': 'configs.v3_config',
     }
 
     if version not in configs:
@@ -27,4 +26,4 @@ def load_config(version: str):
 
 def get_available_versions():
     """Return list of available model versions."""
-    return ['v1', 'v2', 'v3.5', 'v4']
+    return ['v1', 'v2', 'v3']

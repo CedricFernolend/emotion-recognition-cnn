@@ -16,7 +16,7 @@ import random
 # Add parent to path for imports
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from config import EMOTION_LABELS, IMAGE_SIZE
+from configs.base_config import EMOTION_LABELS, IMAGE_SIZE
 from data import get_dataloaders, get_transforms
 from models import load_model
 from configs import load_config

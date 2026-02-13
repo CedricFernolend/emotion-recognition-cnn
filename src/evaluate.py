@@ -7,47 +7,29 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from tqdm import tqdm
 
-from config import EMOTION_LABELS, MODEL_SAVE_PATH, RESULTS_PATH
+from configs.base_config import EMOTION_LABELS
 from data import get_dataloaders
 
 
 def get_model_and_paths(version):
     """Get model and paths for specified version."""
-    if version is None:
-        # Backward compatible: use default
-        from model import load_model
-        return load_model(MODEL_SAVE_PATH), {
-            'model_path': MODEL_SAVE_PATH,
-            'viz_path': f"{RESULTS_PATH}/visualizations",
-        }
-    else:
-        from configs import load_config
-        from models import load_model
-        config = load_config(version)
-        return load_model(version), {
-            'model_path': config.MODEL_SAVE_PATH,
-            'viz_path': config.VIZ_PATH,
-        }
+    from configs import load_config
+    from models import load_model
+    config = load_config(version)
+    return load_model(version), {
+        'model_path': config.MODEL_SAVE_PATH,
+        'viz_path': config.VIZ_PATH,
+    }
 
 
-def test_model(version=None, model_path=None):
+def test_model(version='v3'):
     """Test the trained model and generate evaluation metrics."""
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f"Using device: {device}")
 
     print("Loading model...")
-    if version is not None:
-        model, paths = get_model_and_paths(version)
-        print(f"Evaluating model version: {version}")
-    else:
-        from model import load_model
-        model_path = model_path or MODEL_SAVE_PATH
-        model = load_model(model_path)
-        paths = {
-            'model_path': model_path,
-            'viz_path': f"{RESULTS_PATH}/visualizations",
-        }
-        print("Evaluating default model")
+    model, paths = get_model_and_paths(version)
+    print(f"Evaluating model version: {version}")
 
     model = model.to(device)
     model.eval()
@@ -83,9 +65,7 @@ def test_model(version=None, model_path=None):
                 xticklabels=EMOTION_LABELS,
                 yticklabels=EMOTION_LABELS)
 
-    title = f'Confusion Matrix'
-    if version:
-        title += f' - {version}'
+    title = f'Confusion Matrix - {version}'
     plt.title(title)
     plt.ylabel('True Label')
     plt.xlabel('Predicted Label')
@@ -101,11 +81,9 @@ def test_model(version=None, model_path=None):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Evaluate emotion recognition model')
-    parser.add_argument('--version', type=str, default=None,
-                        choices=['v1', 'v2', 'v3', 'v4'],
-                        help='Model version to evaluate (v1, v2, v3, v4)')
-    parser.add_argument('--model-path', type=str, default=None,
-                        help='Optional path to model weights (overrides version default)')
+    parser.add_argument('--version', type=str, default='v3',
+                        choices=['v1', 'v2', 'v3'],
+                        help='Model version to evaluate (v1, v2, v3)')
     args = parser.parse_args()
 
-    test_model(version=args.version, model_path=args.model_path)
+    test_model(version=args.version)

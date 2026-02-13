@@ -14,7 +14,7 @@ import seaborn as sns
 import torch
 from sklearn.metrics import confusion_matrix
 
-from config import EMOTION_LABELS, RESULTS_PATH
+from configs.base_config import EMOTION_LABELS, RESULTS_PATH
 from data import get_dataloaders
 
 

@@ -5,7 +5,7 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 from PIL import Image
-from config import IMAGE_SIZE, BATCH_SIZE, DATA_PATH, EMOTION_LABELS
+from configs.base_config import IMAGE_SIZE, BATCH_SIZE, DATA_PATH, EMOTION_LABELS
 
 
 class TransformSubset(Dataset):

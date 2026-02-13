@@ -6,17 +6,11 @@
 #SBATCH --partition=NvidiaAll           # GPU partition (adjust based on your cluster)
 #SBATCH --ntasks=1                      # Run on a single node
 
-# Model versions to train (space-separated, or "all" for v1-v4)
-# Usage:
-#   MODEL_VERSIONS="v1 v2" sbatch train_gpu.slurm     # Train v1 and v2
-#   MODEL_VERSIONS="v2" sbatch train_gpu.slurm        # Train only v2
-#   MODEL_VERSIONS="all" sbatch train_gpu.slurm       # Train all versions
-#   sbatch train_gpu.slurm                            # Default: train v1 and v2
-MODEL_VERSIONS=${MODEL_VERSIONS:-"v1 v2 v4"}
+MODEL_VERSIONS=${MODEL_VERSIONS:-"v1 v2 v3"}
 
 # Expand "all" to all versions
 if [ "$MODEL_VERSIONS" = "all" ]; then
-    MODEL_VERSIONS="v1 v2 v4"
+    MODEL_VERSIONS="v1 v2 v3"
 fi
 
 # Print job info
@@ -28,8 +22,6 @@ echo "GPU allocated: $CUDA_VISIBLE_DEVICES"
 echo "Model versions to train: $MODEL_VERSIONS"
 echo "=========================================="
 
-# Load necessary modules (if available on your cluster)
-# Uncomment these if your cluster uses the module system:
 # module load python/3.10
 # module load cuda/11.8
 
