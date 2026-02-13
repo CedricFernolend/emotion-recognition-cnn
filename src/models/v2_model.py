@@ -36,7 +36,7 @@ class SEBlock(nn.Module):
         self.squeeze = nn.AdaptiveAvgPool2d(1)
         self.excitation = nn.Sequential(
             nn.Linear(channels, channels // reduction, bias=False),
-            nn.ReLU(inplace=True),
+            nn.ReLU(inplace=False),
             nn.Linear(channels // reduction, channels, bias=False),
             nn.Sigmoid()
         )
@@ -72,7 +72,7 @@ class SEBlock_V2(nn.Module):
             )
             layers.append(nn.BatchNorm2d(out_channels))
             if i < num_convs - 1:
-                layers.append(nn.ReLU(inplace=True))
+                layers.append(nn.ReLU(inplace=False))
 
         self.body = nn.Sequential(*layers)
 
@@ -120,7 +120,7 @@ class EmotionCNN_V2(nn.Module):
         self.classifier = nn.Sequential(
             nn.Flatten(),
             nn.Linear(512, 128),
-            nn.ReLU(inplace=True),
+            nn.ReLU(inplace=False),
             nn.Dropout(dropout_rate),
             nn.Linear(128, num_classes)
         )

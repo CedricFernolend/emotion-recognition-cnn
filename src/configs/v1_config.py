@@ -32,12 +32,9 @@ USE_LR_SCHEDULER = False  # No LR scheduling
 
 # Data augmentation (basic only)
 AUGMENTATION = {
-    'horizontal_flip': True,
-    'rotation': 15,
-    'translate': 0.1,
-    'color_jitter': False,
-    'gaussian_blur': False,
-    'random_erasing': False,
+    'horizontal_flip': True,    #p = 0.5
+    'rotation': 15,             
+    'translate': 0.1,           #10% translation in x/y
 }
 
 # Version-specific paths

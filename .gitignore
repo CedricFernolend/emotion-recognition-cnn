@@ -2,6 +2,10 @@ venv/
 env/
 venv_cluster/
 
+raf-db-dataset.zip
+train_colab.ipynb
+logs/
+
 RAF/
 deploy_to_cluster.sh
 CLUSTER_GUIDE.md
