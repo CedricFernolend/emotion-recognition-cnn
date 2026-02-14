@@ -1,46 +1,32 @@
-import os
 import argparse
 import torch
 import numpy as np
-from sklearn.metrics import confusion_matrix, classification_report
-import matplotlib.pyplot as plt
-import seaborn as sns
+from sklearn.metrics import classification_report
 from tqdm import tqdm
 
 from configs.base_config import EMOTION_LABELS
+from models import load_model
 from data import get_dataloaders
 
 
-def get_model_and_paths(version):
-    """Get model and paths for specified version."""
-    from configs import load_config
-    from models import load_model
-    config = load_config(version)
-    return load_model(version), {
-        'model_path': config.MODEL_SAVE_PATH,
-        'viz_path': config.VIZ_PATH,
-    }
-
-
 def test_model(version='v3'):
-    """Test the trained model and generate evaluation metrics."""
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    """Test the trained model and print evaluation metrics."""
+    device = torch.device('cuda' if torch.cuda.is_available() else
+                          'mps' if torch.backends.mps.is_available() else 'cpu')
     print(f"Using device: {device}")
 
-    print("Loading model...")
-    model, paths = get_model_and_paths(version)
-    print(f"Evaluating model version: {version}")
+    print(f"Loading model {version}...")
+    model = load_model(version)
 
     model = model.to(device)
     model.eval()
 
-    print("Loading test data...")
     _, _, test_loader = get_dataloaders()
 
     all_predictions = []
     all_labels = []
 
-    print("Testing...")
+    print("Evaluating...")
     with torch.no_grad():
         for images, labels in tqdm(test_loader):
             images = images.to(device)
@@ -58,25 +44,7 @@ def test_model(version='v3'):
     print("\nPer-class results:")
     print(classification_report(all_labels, all_predictions, target_names=EMOTION_LABELS))
 
-    # Generate and save confusion matrix
-    cm = confusion_matrix(all_labels, all_predictions)
-    plt.figure(figsize=(10, 8))
-    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
-                xticklabels=EMOTION_LABELS,
-                yticklabels=EMOTION_LABELS)
-
-    title = f'Confusion Matrix - {version}'
-    plt.title(title)
-    plt.ylabel('True Label')
-    plt.xlabel('Predicted Label')
-
-    os.makedirs(paths['viz_path'], exist_ok=True)
-    save_path = os.path.join(paths['viz_path'], 'confusion_matrix.png')
-    plt.savefig(save_path, dpi=150, bbox_inches='tight')
-    plt.close()
-    print(f"\nConfusion matrix saved to {save_path}")
-
-    return accuracy, cm
+    return accuracy
 
 
 if __name__ == "__main__":
