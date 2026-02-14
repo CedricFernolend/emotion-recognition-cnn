@@ -68,17 +68,14 @@ python visualize,py --version v3    # Generate Visualizations (-//-)
 │   ├── data.py                     # Dataset loading, augmentation, dataloaders
 │   ├── train.py                    # Training pipeline
 │   ├── evaluate.py                 # Test accuracy and classification report
-│   └── visualize.py                # Generate visualizations
-├── webcam_demo/
-│   └── webcam_demo_v2.py           # Webcam emotion recognition
+│   ├── visualize.py                # Generate visualizations
+│   └── webcam_demo.py              # Webcam emotion recognition demo
 ├── data/raw/                       # train/test splits, 6 emotion folders each
 ├── results/
 │   ├── comparison/                 # Visualization of model comparisons (gradcam, conf. matrix and accuracy on test)
 │   ├── v1/                         # Model weights, history.json, visualizations
 │   ├── v2/
 │   └── v3/
-├── scripts/
-│   └── train_all_versions.sh
 ├── train_gpu.slurm                 # SLURM script for training on GPU Server
 ├── train_colab.ipynb               # Google Colab notebook for training
 └── requirements.txt
@@ -145,10 +142,11 @@ Outputs test accuracy and per-class precision/recall/F1
 ### Webcam Demo
 
 ```bash
-python webcam_demo/webcam_demo_v2.py [--model PATH] [--camera ID]
+cd src
+python webcam_demo.py [--camera ID]
 ```
 
-Controls: `q` quit, `s` save frame, `1` detection only, `2`GradCAM overlay, `3` Spatial Attention Overlay (v3 Only), `g` change input to grayscale, `m`to change model to v1/v3 upper right corner shows current used model
+Controls: `q` quit, `s` save frame, `1` detection only, `2` GradCAM overlay, `3` Spatial Attention overlay (V3 only), `g` toggle grayscale input, `m` switch model (V3 <-> V1), `SPACE` pause/unpause
 
 ### Visualizations
 
