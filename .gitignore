@@ -6,6 +6,7 @@ raf-db-dataset.zip
 train_colab.ipynb
 logs/
 
+data/
 RAF/
 deploy_to_cluster.sh
 CLUSTER_GUIDE.md
