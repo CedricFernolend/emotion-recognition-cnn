@@ -6,7 +6,7 @@ from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 from PIL import Image
 from configs.base_config import IMAGE_SIZE, BATCH_SIZE, DATA_PATH, EMOTION_LABELS
-
+import math
 
 class TransformSubset(Dataset):
     """Subset of a dataset with a specific transform applied."""
@@ -89,23 +89,18 @@ def get_transforms(augment=True, augment_config=None):
         ])
 
     # Training transforms - build based on config
-    transform_list = [transforms.Resize((IMAGE_SIZE, IMAGE_SIZE))]
-
+    #transform_list = [transforms.Resize((IMAGE_SIZE, IMAGE_SIZE))]
+    #insted of resizing, zoom in, generalises more, Raf are alligned
     if augment_config is None:
-        # Default: full augmentation (v4 style)
-        augment_config = {
-            'horizontal_flip': True,
-            'rotation': 15,
-            'translate': 0.1,
-            'color_jitter': True,
-            'color_jitter_brightness': 0.2,
-            'color_jitter_contrast': 0.2,
-            'color_jitter_saturation': 0.1,
-            'gaussian_blur': True,
-            'gaussian_blur_prob': 0.1,
-            'random_erasing': True,
-            'random_erasing_prob': 0.1,
-        }
+        augment_config = {}
+    if augment_config.get('random_resized_crop', False):
+        scale = augment_config.get('random_resized_crop_scale', (0.7, 1.0))
+        transform_list = [transforms.RandomResizedCrop(IMAGE_SIZE, scale=scale, ratio=(0.85, 1.15))]
+    else:
+        transform_list = [transforms.Resize((IMAGE_SIZE, IMAGE_SIZE))]
+
+
+
 
     # Horizontal flip
     if augment_config.get('horizontal_flip', False):
@@ -207,9 +202,9 @@ def get_dataloaders(val_split=0.2, seed=42, stratified=True, augment_config=None
     train_dataset = TransformSubset(full_train_dataset, train_indices, train_transform)
     val_dataset = TransformSubset(full_train_dataset, val_indices, val_transform)
 
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=4, pin_memory=True)
-    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=4, pin_memory=True)
-    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=4, pin_memory=True)
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=2, pin_memory=True)
+    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=2, pin_memory=True)
+    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=2, pin_memory=True)
 
     print(f"Dataset splits: train={len(train_dataset)}, val={len(val_dataset)}, test={len(test_dataset)}")
 
@@ -230,7 +225,8 @@ def compute_class_weights(data_path=DATA_PATH):
 
     # Inverse frequency weighting: weight = total / (num_classes * count)
     num_classes = len(EMOTION_LABELS)
-    weights = [total / (num_classes * c) for c in counts]
+    weights = [math.sqrt(total / (num_classes * c)) for c in counts] #changed to square. prevents model guessing fear when its unsure to avoid heavy penalty
+    #weights = [total / (num_classes * c) for c in counts]
 
     print("Class weights (inverse frequency):")
     for i, (emotion, weight) in enumerate(zip(EMOTION_LABELS, weights)):

@@ -14,7 +14,7 @@ import torch.nn.functional as F
 
 
 class SEBlock(nn.Module):
-    """Channel Attention (Squeeze-and-Excitation)"""
+    """Channel Attention (Squeezeq-and-Excitation)"""
 
     def __init__(self, channels, reduction=16):
         super(SEBlock, self).__init__()

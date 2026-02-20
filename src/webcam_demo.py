@@ -436,7 +436,7 @@ class EmotionDemo:
 
                     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
                     faces = self.face_cascade.detectMultiScale(
-                        gray, scaleFactor=1.1, minNeighbors=5, minSize=(60, 60)
+                        gray, scaleFactor=1.5, minNeighbors=5, minSize=(60, 60)
                     )
 
                     face_crop = None
@@ -446,7 +446,7 @@ class EmotionDemo:
                         x, y, fw, fh = max(faces, key=lambda f: f[2] * f[3])
 
                         center_x, center_y = x + fw // 2, y + fh // 2
-                        crop_size = max(fw, fh) * 1.5
+                        crop_size = max(fw, fh) * 1.1 #changed to 1.1 from 1.5 for RAF-DB because their faces are alligned
                         half_size = int(crop_size // 2)
 
                         x1 = max(0, center_x - half_size)
