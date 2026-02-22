@@ -181,7 +181,7 @@ Source RAF-DB: https://www.kaggle.com/datasets/shuvoalok/raf-db-dataset
 
 ```
 for RAF-DB:
-1 -> surbprise
+1 -> surprise
 2 -> fear
 3 -> disgust
 4 -> happiness
