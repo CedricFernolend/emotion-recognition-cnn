@@ -11,7 +11,7 @@ python predict_to_csv.py
 ```
 takes all images in the eval_data folder and generates a predictions.csv file inside the eval_results folder. it has the following structure:
 
-    image_name,true_label,predicted_label,match(0,1)
+    image_name, happiness score, surprise score, sadness score, anger score, disgust score, fear score
 
 the eval_data folder must be structured like this:
 ```
@@ -122,7 +122,7 @@ python train.py --version v3 # v1 and v2 are also available
 ```
 
 ### V3 Training parameters
-
+ ```
 | Setting | FER-2013 | RAF-DB |
 |---|---|
 | Image Size | 64×64 | -//- |
@@ -135,7 +135,7 @@ python train.py --version v3 # v1 and v2 are also available
 | Early Stopping | patience=10 | -//- |
 | Optimizer | Adam | -//- |
 | LR Scheduler | ReduceLROnPlateau (factor=0.7, patience=3, min=1e-6) | ReduceLROnPlateau (factor=0.5, patience=5, min=1e-6) |
-
+```
 ## Evaluation
 
 ```bash
