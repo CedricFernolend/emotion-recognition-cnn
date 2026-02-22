@@ -1,26 +1,35 @@
+# Information for Evaluators
+The required python files for generating a csv and process a mp4 are insinde the /eval folder.
+
+```bash
+python process_mp4.py video.mp4
+```
+generates a video_processed.mp4 with gradcam overlay + predicted emotion, similar to the webcam demo
+
+```bash
+python predict_to_csv.py 
+```
+takes all images in the eval_data folder and generates a predictions.csv file inside the eval_results folder. it has the following structure:
+
+    image_name,true_label,predicted_label,match(0,1)
+
+the eval_data folder must be structured like this:
+```
+eval_data/
+├── happiness/
+│   └──picture.jpg ...
+├── surprise/
+├── sadness/
+├── anger/
+├── disgust/
+└── fear/
+```
+
 # Facial Emotion Recognition CNN
 
 Classifies 6 emotions **happiness, surprise, sadness, anger, disgust, fear** using a CNN with S&E and Spatial Attention. 
 
-Three model versions show the improvement of adding onto our baseline v1 Model.
-
-**Authors:** Zeynep Belde, Alena Daneker, Cedric Fernolend
-
-## Model Versions
-
-| | V1 Baseline | V2 SE Attention | V3 SE + Spatial Attention |
-|---|---|---|---|
-| **Blocks** | 3 | 4 | 4 |
-| **Filters** | 64→128→256 | 64→128→256→512 | 64→128→256→512 |
-| **SE Attention** | No | Yes | Yes |
-| **Spatial Attention** | No | No | Yes |
-| **Label Smoothing** | 0.0 | 0.0 | 0.15 |
-| **LR Scheduler** | No | No | ReduceLROnPlateau |
-| **Dropout** | 0.5 | 0.5 | 0.6 + 0.36 |
-| **Weight Decay** | 0 | 1e-4 | 5e-4 |
-| **Test Accuracy Fer2013** | 66.85% | 67.72% | **69.89%** |
-
-### V3 Architecture in Detail
+### Final Architecture (V3)
 
 ```
 Input: 3×64×64
@@ -29,14 +38,14 @@ Input: 3×64×64
 ├── Block 3: 128→256 + SE + Spatial(k=7) → MaxPool → 256×8×8   (3 convs)
 ├── Block 4: 256→512 + SE + Spatial(k=3) → MaxPool → 512×4×4
 ├── Global Average Pool → 512
-└── Classifier: Dropout(0.6) → FC(512,128) → ReLU → BN → Dropout(0.36) → FC(128,6)
+└── Classifier: Dropout(0.5) → FC(512,128) → ReLU → BN → Dropout(0.3) → FC(128,6)
 ```
 
 ### V1 & V2
 
 **V1** is a 3-block baseline CNN. Serves as performance baseline from the preliminary report.
 
-**V2** adds a 4th convolutional block and SE attention in every block, trained at a lower LR=1e-4 with light weight decay. Achieved a +0.87% improvement over V1.
+**V2** adds a 4th convolutional block and SE attention in every block.
 
 ## Quick Start
 
@@ -49,12 +58,13 @@ cd src
 python train.py --version v3        # Train V3 (default)
 python train.py --version v1        # Train V1
 python evaluate.py --version v3     # Evaluate (also for v1 / v2)
-python visualize,py --version v3    # Generate Visualizations (-//-)
+python visualize,py --version v3    # Generate Visualizations (-//-), without argument does all three + comparison visuals
 ```
 
 ## Project Structure
 
 ```
+├── other/ # contains results for some of our experiments
 ├── src/
 │   ├── configs/
 │   │   ├── base_config.py          # Shared settings
@@ -73,11 +83,11 @@ python visualize,py --version v3    # Generate Visualizations (-//-)
 ├── data/raw/                       # train/test splits, 6 emotion folders each
 ├── results/
 │   ├── comparison/                 # Visualization of model comparisons (gradcam, conf. matrix and accuracy on test)
-│   ├── v1/                         # Model weights, history.json, visualizations
+│   ├── v1/                         # our best models all trained on RAF-DB
 │   ├── v2/
 │   └── v3/
-├── train_gpu.slurm                 # SLURM script for training on GPU Server
-├── train_colab.ipynb               # Google Colab notebook for training
+├── train_gpu.slurm                 # SLURM script for training on GPU Server (not used later on, not tested with current model and training conf.)
+├── train_colab.ipynb               # Google Colab notebook for training (final models were trained on google collab via this notbook)
 └── requirements.txt
 ```
 
@@ -102,9 +112,7 @@ Images are resized to 64×64, normalized to [-1, 1] range (mean=0.5, std=0.5). 2
 
 ### Data Augmentation
 
-**V3 data augmentation:** random horizontal flip, rotation (±15°), translation (±10%), color jitter (brightness/contrast=0.2), gaussian blur (p=0.1), random erasing (p=0.1).
-
-**V1/V2 augmentation:** horizontal flip, rotation, translation only.
+diffrent data Augmentation has been used for RAF-DB and FER-2013 Datasets. Details in src/configs/v3_config.py (Raf-DB) and src/configs/v3_config.old (FER-2013)
 
 ## Training
 
@@ -115,20 +123,18 @@ python train.py --version v3 # v1 and v2 are also available
 
 ### V3 Training parameters
 
-| Setting | Value |
+| Setting | FER-2013 | RAF-DB |
 |---|---|
-| Image Size | 64×64 |
-| Batch Size | 32 |
-| Learning Rate | 0.0003 (scheduled) |
-| Epochs (max) | 60 |
-| Dropout | 0.6 / 0.36 (graduated) |
-| Weight Decay | 5e-4 |
-| Label Smoothing | 0.15 |
-| Early Stopping | patience=10 |
-| Optimizer | Adam |
-| LR Scheduler | ReduceLROnPlateau (factor=0.7, patience=3, min=1e-6) |
-
-All version configs are in `src/configs/`.
+| Image Size | 64×64 | -//- |
+| Batch Size | 32 | -//- |
+| Learning Rate | 0.0003 (scheduled) | 0.00015(scheduled)|
+| Epochs (max) | 60 | -//-|
+| Dropout | 0.6 / 0.36 | 0.5 / 0.3 |
+| Weight Decay | 5e-4 | -//- |
+| Label Smoothing | 0.15 | 0.10|
+| Early Stopping | patience=10 | -//- |
+| Optimizer | Adam | -//- |
+| LR Scheduler | ReduceLROnPlateau (factor=0.7, patience=3, min=1e-6) | ReduceLROnPlateau (factor=0.5, patience=5, min=1e-6) |
 
 ## Evaluation
 
@@ -170,4 +176,16 @@ Version comparing outputs in `results/comparison/` (when visualizing multiple ve
 
 ## Dataset
 
-Currently using Fer2013. Future Plans to use RAF-DB 
+Source FER-2013: https://www.kaggle.com/datasets/msambare/fer2013
+Source RAF-DB: https://www.kaggle.com/datasets/shuvoalok/raf-db-dataset
+
+```
+for RAF-DB:
+1 -> surbprise
+2 -> fear
+3 -> disgust
+4 -> happiness
+5 -> sadness
+6 -> anger
+7 -> neutral(unused)
+```

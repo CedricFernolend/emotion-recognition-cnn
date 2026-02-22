@@ -223,7 +223,6 @@ def compute_class_weights(data_path=DATA_PATH):
     counts = [class_counts.get(i, 1) for i in range(len(EMOTION_LABELS))]
     total = sum(counts)
 
-    # Inverse frequency weighting: weight = total / (num_classes * count)
     num_classes = len(EMOTION_LABELS)
     weights = [math.sqrt(total / (num_classes * c)) for c in counts] #changed to square. prevents model guessing fear when its unsure to avoid heavy penalty
     #weights = [total / (num_classes * c) for c in counts]

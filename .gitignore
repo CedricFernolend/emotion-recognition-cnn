@@ -4,10 +4,15 @@ venv_cluster/
 
 raf-db-dataset.zip
 train_colab.ipynb
+
 logs/
 
 data/
+
 RAF/
+
+other/
+
 deploy_to_cluster.sh
 CLUSTER_GUIDE.md
 
